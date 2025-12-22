@@ -1,0 +1,77 @@
+# Swiip Backend .gitignore
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Prisma
+# Keep schema.prisma and migrations, ignore generated client
+# Generated Prisma client is in node_modules/.prisma/client
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Testing
+.jest/
+*.test.js.snap
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.pem
+.certificates/

@@ -1,0 +1,276 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Purpose {
+  CONVERSATION
+  PRACTICE
+  COFFEE
+}
+
+enum SwipeType {
+  LIKE
+  PASS
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  NUDITY
+  SCAM
+  OTHER
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String?   @unique
+  phone             String?   @unique
+  isBanned          Boolean   @default(false)
+  isPremium         Boolean   @default(false)
+  premiumSource     String?   // "revenuecat", "admin", etc.
+  premiumUpdatedAt  DateTime?
+  premiumExpiresAt  DateTime?
+  lastActiveAt      DateTime?
+  referralCode      String?   @unique
+  referredByUserId  String?
+  dailyLikesUsed    Int       @default(0)
+  dailyExtraLikesFromAds Int @default(0)
+  lastLikeResetAt   DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  profile      Profile?
+  sessions     Session[]
+  swipesFrom   Swipe[]  @relation("SwipeFrom")
+  swipesTo     Swipe[]  @relation("SwipeTo")
+  matchesAsA   Match[]  @relation("MatchUserA")
+  matchesAsB   Match[]  @relation("MatchUserB")
+  dailyUsage   DailyUsage[]
+  verificationCodes VerificationCode[]
+  blocksAsBlocker Block[] @relation("Blocker")
+  blocksAsBlocked Block[] @relation("Blocked")
+  reportsAsReporter Report[] @relation("Reporter")
+  reportsAsReported Report[] @relation("Reported")
+  boosts Boost[]
+  pushTokens PushToken[]
+  referredBy User? @relation("ReferredBy", fields: [referredByUserId], references: [id])
+  referredUsers User[] @relation("ReferredBy")
+  billingEvents BillingEvent[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([referralCode])
+  @@index([referredByUserId])
+  @@index([lastActiveAt])
+  @@index([premiumUpdatedAt])
+}
+
+model Profile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  displayName       String
+  birthYear         Int?
+  city              String?
+  country           String?
+  lat               Float?
+  lng               Float?
+  languagesNative   String[] @default([])
+  languagesPractice String[] @default([])
+  purpose           Purpose
+  bio               String?  @db.VarChar(240)
+  photos            String[] @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([lat, lng])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
+
+model Swipe {
+  id         String    @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  type       SwipeType
+  createdAt  DateTime  @default(now())
+
+  fromUser User @relation("SwipeFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("SwipeTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([type])
+}
+
+model Match {
+  id        String   @id @default(cuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  userA        User         @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB        User         @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  conversation Conversation?
+
+  // Enforce canonical ordering: userAId < userBId always
+  // This ensures unique pairs regardless of order
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  matchId   String   @unique
+  createdAt DateTime @default(now())
+
+  match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([matchId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderUserId   String
+  text           String       @db.VarChar(2000)
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderUserId])
+  @@index([createdAt])
+}
+
+model DailyUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  day       String   // Format: YYYY-MM-DD
+  aiCount   Int      @default(0)
+  msgCount  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([userId])
+  @@index([day])
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String   // 6-digit code
+  type      String   // "EMAIL" or "PHONE"
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@index([expiresAt])
+}
+
+model Block {
+  id           String   @id @default(cuid())
+  blockerUserId String
+  blockedUserId String
+  createdAt    DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerUserId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerUserId, blockedUserId])
+  @@index([blockerUserId])
+  @@index([blockedUserId])
+}
+
+model Report {
+  id            String      @id @default(cuid())
+  reporterUserId String
+  reportedUserId String
+  reason        ReportReason
+  details       String?     @db.VarChar(500)
+  createdAt     DateTime    @default(now())
+
+  reporter User @relation("Reporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reported User @relation("Reported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+
+  @@index([reporterUserId])
+  @@index([reportedUserId])
+  @@index([reason])
+}
+
+model Boost {
+  id        String   @id @default(cuid())
+  userId    String
+  startsAt  DateTime
+  endsAt    DateTime
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([endsAt])
+}
+
+enum PushTokenPlatform {
+  IOS
+  ANDROID
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  PushTokenPlatform
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model BillingEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  eventType String   // "purchase", "renewal", "cancellation", "expiration", etc.
+  payloadJson String @db.Text // Full webhook payload as JSON string
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([createdAt])
+}
