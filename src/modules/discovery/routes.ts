@@ -245,17 +245,21 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       score += nativeOverlap * 5;
       score += practiceOverlap * 3;
 
-      // 4) Distance bonus (if maxDistanceKm is set, closer = better)
-      if (queryParams.maxDistanceKm !== null && queryParams.maxDistanceKm !== undefined && currentProfile.lat && currentProfile.lng && profile.lat && profile.lng) {
+      // 4) Distance calculation (always calculate if both users have location)
+      if (currentProfile.lat && currentProfile.lng && profile.lat && profile.lng) {
         distanceKm = calculateDistanceKm(
           currentProfile.lat,
           currentProfile.lng,
           profile.lat,
           profile.lng
         );
-        // Closer profiles get a small bonus (inverse distance, max 20 points)
-        const distanceBonus = Math.max(0, 20 - distanceKm / 5);
-        score += distanceBonus;
+        
+        // Distance bonus (if maxDistanceKm is set, closer = better)
+        if (queryParams.maxDistanceKm !== null && queryParams.maxDistanceKm !== undefined) {
+          // Closer profiles get a small bonus (inverse distance, max 20 points)
+          const distanceBonus = Math.max(0, 20 - distanceKm / 5);
+          score += distanceBonus;
+        }
       }
 
       // 5) City match bonus (small)

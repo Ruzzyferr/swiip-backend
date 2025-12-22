@@ -106,7 +106,7 @@ router.post("/login", async (req, res, next) => {
       },
     });
 
-    // If user doesn't exist, create new user and return token
+    // If user doesn't exist, create new user
     if (!user) {
       // Generate unique referral code
       let referralCode = generateReferralCode();
@@ -122,55 +122,16 @@ router.post("/login", async (req, res, next) => {
         }
       }
 
-      const newUser = await prisma.user.create({
+      user = await prisma.user.create({
         data: {
           email: normalizedEmail,
           phone: normalizedPhone,
           referralCode,
         },
       });
-
-      const token = generateSessionToken();
-      const tokenHash = hashSessionToken(token);
-      const expiresAt = getSessionExpiry();
-
-      await prisma.session.create({
-        data: {
-          userId: newUser.id,
-          tokenHash,
-          expiresAt,
-        },
-      });
-
-      return res.json({
-        userId: newUser.id,
-        token,
-        requiresCode: false,
-      });
     }
 
-    // If user exists but no profile, return token
-    if (!user.profile) {
-      const token = generateSessionToken();
-      const tokenHash = hashSessionToken(token);
-      const expiresAt = getSessionExpiry();
-
-      await prisma.session.create({
-        data: {
-          userId: user.id,
-          tokenHash,
-          expiresAt,
-        },
-      });
-
-      return res.json({
-        userId: user.id,
-        token,
-        requiresCode: false,
-      });
-    }
-
-    // If user exists with profile, send verification code
+    // Always send verification code
     const codeType = normalizedEmail ? "EMAIL" : "PHONE";
     const code = await createVerificationCode(user.id, codeType);
     

@@ -12,11 +12,14 @@ const updateProfileSchema = z.object({
   displayName: z.string().min(2).max(40),
   birthYear: z.number().int().min(1940).max(new Date().getFullYear() - 18).optional(),
   city: z.string().trim().optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
   languagesNative: z.array(z.string()).optional(),
   languagesPractice: z.array(z.string()).optional(),
   purpose: purposeEnum,
-  bio: z.string().max(240).optional(),
+  bio: z.string().max(500).optional(),
   photos: z.array(z.string().url()).max(3).optional(),
+  interests: z.array(z.string()).optional(),
 });
 
 router.get("/me", authMiddleware, async (req, res, next) => {
@@ -54,21 +57,27 @@ router.put("/me", authMiddleware, async (req, res, next) => {
         displayName: body.displayName,
         birthYear: body.birthYear ?? null,
         city: body.city ?? null,
+        lat: body.lat ?? null,
+        lng: body.lng ?? null,
         languagesNative: body.languagesNative ?? [],
         languagesPractice: body.languagesPractice ?? [],
         purpose: body.purpose,
         bio: body.bio ?? null,
         photos: body.photos ?? [],
+        interests: body.interests ?? [],
       },
       update: {
         displayName: body.displayName,
         birthYear: body.birthYear ?? null,
         city: body.city ?? null,
+        lat: body.lat ?? null,
+        lng: body.lng ?? null,
         languagesNative: body.languagesNative ?? [],
         languagesPractice: body.languagesPractice ?? [],
         purpose: body.purpose,
         bio: body.bio ?? null,
         photos: body.photos ?? [],
+        interests: body.interests ?? [],
       },
     });
 
@@ -89,7 +98,7 @@ router.put("/me", authMiddleware, async (req, res, next) => {
       } else if (firstError.path.some((p) => String(p) === "birthYear")) {
         message = "You must be at least 18 years old";
       } else if (firstError.path.some((p) => String(p) === "bio")) {
-        message = "Bio must be 240 characters or less";
+        message = "Bio must be 500 characters or less";
       } else if (firstError.path.some((p) => String(p) === "photos")) {
         message = "You can upload up to 3 photos, and each must be a valid URL";
       }

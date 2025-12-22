@@ -84,8 +84,9 @@ model Profile {
   languagesNative   String[] @default([])
   languagesPractice String[] @default([])
   purpose           Purpose
-  bio               String?  @db.VarChar(240)
+  bio               String?  @db.VarChar(500)
   photos            String[] @default([])
+  interests         String[] @default([])
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

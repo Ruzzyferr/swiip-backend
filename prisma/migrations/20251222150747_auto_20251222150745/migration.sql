@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Profile" ADD COLUMN     "interests" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ALTER COLUMN "bio" SET DATA TYPE VARCHAR(500);
