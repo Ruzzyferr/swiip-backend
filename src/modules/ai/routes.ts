@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, ConflictError } from "../../lib/httpErrors.js";
-import { incrementAI, getUsage, canLike } from "../../lib/usage.js";
+import { incrementAI, getUsage, canLike, canSendDirect } from "../../lib/usage.js";
 import { getPolishPrompt } from "./prompts.js";
 import { polishMessage } from "./provider.js";
 
@@ -102,6 +102,7 @@ router.get("/usage", authMiddleware, async (req, res, next) => {
 
     const usage = await getUsage(req.user.id, user.isPremium);
     const likeInfo = await canLike(req.user.id, user.isPremium);
+    const directInfo = await canSendDirect(req.user.id, user.isPremium);
 
     res.json({
       usage: {
@@ -116,6 +117,10 @@ router.get("/usage", authMiddleware, async (req, res, next) => {
         likesRemaining: likeInfo.likesRemaining,
         likesLimit: likeInfo.likesLimit,
         canLike: likeInfo.canLike,
+        favoritesUsed: directInfo.directUsed,
+        favoritesRemaining: directInfo.directRemaining,
+        favoritesLimit: directInfo.directLimit,
+        canFavorite: directInfo.canSend,
       },
     });
   } catch (error) {

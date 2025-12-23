@@ -5,7 +5,7 @@ import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, ConflictError, NotFoundError, PaymentRequiredError } from "../../lib/httpErrors.js";
 import { calculateDistanceKm, EU_COUNTRIES } from "../../lib/distance.js";
 import { notifyNewMatch } from "../../lib/notify.js";
-import { canLike, incrementLike } from "../../lib/usage.js";
+import { canLike, incrementLike, canSendDirect, incrementDirect } from "../../lib/usage.js";
 
 const router = Router();
 
@@ -15,6 +15,11 @@ const likeSchema = z.object({
 
 const passSchema = z.object({
   toUserId: z.string().cuid(),
+});
+
+const favoriteSchema = z.object({
+  toUserId: z.string().cuid(),
+  text: z.string().min(10).max(2000),
 });
 
 // Helper: Get canonical user pair (lower ID first)
@@ -67,6 +72,19 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       throw new ConflictError("Profile required");
     }
 
+    // Check if we need to shuffle (12-hour cache)
+    const now = new Date();
+    const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+    const needsShuffle = !currentUser.lastFeedShuffleAt || currentUser.lastFeedShuffleAt < twelveHoursAgo;
+    
+    // If shuffle needed, update timestamp
+    if (needsShuffle) {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { lastFeedShuffleAt: now },
+      });
+    }
+
     // Check premium status for premium-only filters
     const isPremium = currentUser.isPremium;
     if (!isPremium) {
@@ -77,13 +95,54 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       }
     }
 
-    // Get users I've already swiped on
-    // Note: If you get "Cannot read properties of undefined", run: pnpm prisma:generate
+    // Get users I've already swiped on (PASS only - LIKE/FAVORITE are now ConversationRequests)
     const mySwipes = await (prisma as any).swipe.findMany({
-      where: { fromUserId: req.user.id },
+      where: { 
+        fromUserId: req.user.id,
+        type: "PASS",
+      },
       select: { toUserId: true },
     });
     const swipedUserIds = new Set(mySwipes.map((s: { toUserId: string }) => s.toUserId));
+
+    // Get users with ConversationRequests
+    // PENDING and ACCEPTED: always exclude
+    // DECLINED: exclude only if declined within last 2 weeks
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    
+    const outgoingRequests = await (prisma as any).conversationRequest.findMany({
+      where: {
+        fromUserId: req.user.id,
+        OR: [
+          { status: "PENDING" },
+          { status: "ACCEPTED" },
+          {
+            status: "DECLINED",
+            updatedAt: { gte: twoWeeksAgo },
+          },
+        ],
+      },
+      select: { toUserId: true },
+    });
+    const incomingRequests = await (prisma as any).conversationRequest.findMany({
+      where: {
+        toUserId: req.user.id,
+        OR: [
+          { status: "PENDING" },
+          { status: "ACCEPTED" },
+          {
+            status: "DECLINED",
+            updatedAt: { gte: twoWeeksAgo },
+          },
+        ],
+      },
+      select: { fromUserId: true },
+    });
+    const requestUserIds = new Set([
+      ...outgoingRequests.map((r: { toUserId: string }) => r.toUserId),
+      ...incomingRequests.map((r: { fromUserId: string }) => r.fromUserId),
+    ]);
 
     // Get blocked users (both ways)
     const blocksWhereIBlocked = await (prisma as any).block.findMany({
@@ -106,8 +165,7 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
     });
     const reportedUserIds = new Set(myReports.map((r: { reportedUserId: string }) => r.reportedUserId));
 
-    // Get active boosts
-    const now = new Date();
+    // Get active boosts (using the 'now' variable already defined above)
     const activeBoosts = await (prisma as any).boost.findMany({
       where: {
         startsAt: { lte: now },
@@ -120,6 +178,8 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
     // Combine excluded user IDs
     const excludedUserIds = new Set([
       req.user.id,
+      ...swipedUserIds, // PASS swipes
+      ...requestUserIds, // ConversationRequests (any status)
       ...blockedUserIds,
       ...reportedUserIds,
     ]);
@@ -274,7 +334,7 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       return { profile, score, distanceKm };
     });
 
-    // Sort by score (descending), then by distance (if available), then randomize
+    // Sort by score (descending), then by distance (if available)
     scoredProfiles.sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
@@ -283,8 +343,44 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       if (a.distanceKm !== undefined && b.distanceKm !== undefined) {
         return a.distanceKm - b.distanceKm;
       }
-      return Math.random() - 0.5; // Randomize same scores
+      return 0; // Keep original order for same scores
     });
+
+    // Apply shuffle if needed (12-hour cache)
+    if (needsShuffle) {
+      // Use deterministic seed based on current timestamp for consistent results within 12 hours
+      // Round to 12-hour periods so same period = same shuffle
+      const twelveHourPeriod = Math.floor(now.getTime() / (12 * 60 * 60 * 1000));
+      const shuffleSeed = twelveHourPeriod;
+      
+      // Simple seeded random function (linear congruential generator)
+      let seed = shuffleSeed;
+      const seededRandom = () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+      };
+      
+      // Fisher-Yates shuffle with seeded random
+      for (let i = scoredProfiles.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [scoredProfiles[i], scoredProfiles[j]] = [scoredProfiles[j], scoredProfiles[i]];
+      }
+    } else {
+      // Even if not shuffling, apply a small randomization to same-scored profiles
+      // This prevents exact same order every time within the 12-hour window
+      scoredProfiles.sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        if (a.distanceKm !== undefined && b.distanceKm !== undefined) {
+          return a.distanceKm - b.distanceKm;
+        }
+        // Use userId hash for deterministic but varied ordering
+        const hashA = a.profile.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const hashB = b.profile.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return hashA - hashB;
+      });
+    }
 
     // Take top N
     const selectedProfiles = scoredProfiles.slice(0, limit);
@@ -312,6 +408,8 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
 });
 
 router.post("/like", authMiddleware, async (req, res, next) => {
+  // NEW SYSTEM: Create PENDING ConversationRequest with kind=LIKE
+  // No match creation - only when accepted
   try {
     if (!req.user) {
       throw new BadRequestError("User not found");
@@ -367,29 +465,28 @@ router.post("/like", authMiddleware, async (req, res, next) => {
       throw new NotFoundError("User profile not found");
     }
 
-    // Increment like count (after validation, before creating swipe)
-    await incrementLike(req.user.id, currentUser.isPremium);
-
-    // Upsert swipe
-    await (prisma as any).swipe.upsert({
+    // Check if request already exists
+    const existingRequest = await (prisma as any).conversationRequest.findUnique({
       where: {
         fromUserId_toUserId: {
           fromUserId: req.user.id,
           toUserId: body.toUserId,
         },
       },
-      create: {
-        fromUserId: req.user.id,
-        toUserId: body.toUserId,
-        type: "LIKE",
-      },
-      update: {
-        type: "LIKE",
-      },
     });
 
-    // Check if other user has already liked me
-    const reverseSwipe = await (prisma as any).swipe.findUnique({
+    if (existingRequest) {
+      return res.status(409).json({
+        error: {
+          code: "REQUEST_ALREADY_SENT",
+          message: "You have already sent a request to this user",
+          requestId: req.id || "unknown",
+        },
+      });
+    }
+
+    // Check reverse request (they sent to me)
+    const reverseRequest = await (prisma as any).conversationRequest.findUnique({
       where: {
         fromUserId_toUserId: {
           fromUserId: body.toUserId,
@@ -398,12 +495,16 @@ router.post("/like", authMiddleware, async (req, res, next) => {
       },
     });
 
-    let matched = false;
+    // Increment like count
+    await incrementLike(req.user.id, currentUser.isPremium);
+
     let matchId: string | undefined;
     let conversationId: string | undefined;
+    let requestId: string;
 
-    if (reverseSwipe?.type === "LIKE") {
-      // Create match with canonical ordering
+    // If reverse request exists and it's a LIKE, create match immediately
+    if (reverseRequest && reverseRequest.kind === "LIKE" && reverseRequest.status === "PENDING") {
+      // Both users liked each other - create Match immediately
       const [userAId, userBId] = getCanonicalPair(req.user.id, body.toUserId);
 
       const match = await (prisma as any).match.upsert({
@@ -420,10 +521,9 @@ router.post("/like", authMiddleware, async (req, res, next) => {
         update: {},
       });
 
-      matched = true;
       matchId = match.id;
 
-      // Create conversation if not exists
+      // Create conversation linked to match
       const conversation = await (prisma as any).conversation.upsert({
         where: {
           matchId: match.id,
@@ -436,25 +536,70 @@ router.post("/like", authMiddleware, async (req, res, next) => {
 
       conversationId = conversation.id;
 
-      // Notify both users of the new match
-      const otherUserProfile = targetUser.profile;
+      // Update reverse request status to ACCEPTED
+      await (prisma as any).conversationRequest.update({
+        where: { id: reverseRequest.id },
+        data: { status: "ACCEPTED" },
+      });
+
+      // Create my request as ACCEPTED (since we matched)
+      const request = await (prisma as any).conversationRequest.create({
+        data: {
+          fromUserId: req.user.id,
+          toUserId: body.toUserId,
+          status: "ACCEPTED",
+          kind: "LIKE",
+        },
+      });
+
+      requestId = request.id;
+
+      // Notify both users
+      const targetUserProfile = targetUser.profile;
       const currentUserProfile = await prisma.profile.findUnique({
         where: { userId: req.user.id },
         select: { displayName: true },
       });
 
-      if (otherUserProfile && currentUserProfile) {
-        // Notify the other user
+      if (targetUserProfile && currentUserProfile) {
         await notifyNewMatch(body.toUserId, currentUserProfile.displayName);
-        // Notify current user
-        await notifyNewMatch(req.user.id, otherUserProfile.displayName);
+        await notifyNewMatch(req.user.id, targetUserProfile.displayName);
       }
+
+      return res.json({
+        success: true,
+        requestId,
+        matchId,
+        conversationId,
+        matched: true,
+      });
+    } else if (reverseRequest && reverseRequest.kind === "FAVORITE") {
+      // They sent a FAVORITE request - we can't like them, they need to accept/decline first
+      return res.status(409).json({
+        error: {
+          code: "REQUEST_ALREADY_EXISTS",
+          message: "This user has already sent you a request. Please accept or decline it first.",
+          requestId: req.id || "unknown",
+        },
+      });
     }
 
+    // No reverse request or it's not a LIKE - create PENDING ConversationRequest
+    const request = await (prisma as any).conversationRequest.create({
+      data: {
+        fromUserId: req.user.id,
+        toUserId: body.toUserId,
+        status: "PENDING",
+        kind: "LIKE",
+      },
+    });
+
+    requestId = request.id;
+
     res.json({
-      matched,
-      matchId,
-      conversationId,
+      success: true,
+      requestId,
+      matched: false,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -498,6 +643,148 @@ router.post("/pass", authMiddleware, async (req, res, next) => {
     });
 
     res.status(204).send();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(new BadRequestError(error.issues[0]?.message || "Validation error"));
+    } else {
+      next(error);
+    }
+  }
+});
+
+router.post("/favorite", authMiddleware, async (req, res, next) => {
+  // NEW SYSTEM: Create PENDING ConversationRequest with kind=FAVORITE
+  // Also create first message immediately
+  try {
+    if (!req.user) {
+      throw new BadRequestError("User not found");
+    }
+
+    await ensureProfileExists(req.user.id);
+
+    const body = favoriteSchema.parse(req.body);
+
+    if (body.toUserId === req.user.id) {
+      throw new BadRequestError("Cannot favorite yourself");
+    }
+
+    // Get user premium status
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { isPremium: true },
+    });
+
+    if (!currentUser) {
+      throw new BadRequestError("User not found");
+    }
+
+    // Check direct message quota
+    const directCheck = await canSendDirect(req.user.id, currentUser.isPremium);
+    if (!directCheck.canSend) {
+      return res.status(429).json({
+        error: {
+          code: "DIRECT_LIMIT_REACHED",
+          message: "Daily direct message limit reached. Upgrade to Premium for unlimited direct messages.",
+          requestId: req.id || "unknown",
+          details: {
+            directUsed: directCheck.directUsed,
+            directRemaining: directCheck.directRemaining,
+            directLimit: directCheck.directLimit,
+            isPremium: currentUser.isPremium,
+          },
+        },
+      });
+    }
+
+    // Check if target user exists and has profile
+    const targetUser = await prisma.user.findUnique({
+      where: { id: body.toUserId },
+      include: { profile: true },
+    });
+
+    if (!targetUser || targetUser.isBanned) {
+      throw new NotFoundError("User not found");
+    }
+
+    if (!targetUser.profile) {
+      throw new NotFoundError("User profile not found");
+    }
+
+    // Check if request already exists
+    const existingRequest = await (prisma as any).conversationRequest.findUnique({
+      where: {
+        fromUserId_toUserId: {
+          fromUserId: req.user.id,
+          toUserId: body.toUserId,
+        },
+      },
+    });
+
+    if (existingRequest) {
+      return res.status(409).json({
+        error: {
+          code: "REQUEST_ALREADY_SENT",
+          message: "You have already sent a request to this user",
+          requestId: req.id || "unknown",
+        },
+      });
+    }
+
+    // Check reverse request (they sent to me)
+    const reverseRequest = await (prisma as any).conversationRequest.findUnique({
+      where: {
+        fromUserId_toUserId: {
+          fromUserId: body.toUserId,
+          toUserId: req.user.id,
+        },
+      },
+    });
+
+    if (reverseRequest) {
+      return res.status(409).json({
+        error: {
+          code: "REQUEST_ALREADY_EXISTS",
+          message: "This user has already sent you a request. Please accept or decline it first.",
+          requestId: req.id || "unknown",
+        },
+      });
+    }
+
+    // Increment direct message count
+    const directResult = await incrementDirect(req.user.id, currentUser.isPremium);
+
+    // Create PENDING ConversationRequest with kind=FAVORITE
+    const request = await (prisma as any).conversationRequest.create({
+      data: {
+        fromUserId: req.user.id,
+        toUserId: body.toUserId,
+        status: "PENDING",
+        kind: "FAVORITE",
+      },
+    });
+
+    // Create first message
+    const firstMessage = await (prisma as any).message.create({
+      data: {
+        senderUserId: req.user.id,
+        text: body.text,
+        isRequestMessage: true,
+        requestId: request.id,
+      },
+    });
+
+    // Update request with firstMessageId
+    await (prisma as any).conversationRequest.update({
+      where: { id: request.id },
+      data: { firstMessageId: firstMessage.id },
+    });
+
+    res.json({
+      success: true,
+      requestId: request.id,
+      messageId: firstMessage.id,
+      directRemaining: directResult.directRemaining,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       next(new BadRequestError(error.issues[0]?.message || "Validation error"));

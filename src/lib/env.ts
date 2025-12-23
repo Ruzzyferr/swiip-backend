@@ -14,6 +14,8 @@ const envSchema = z.object({
   LIKE_DAILY_FREE_LIMIT: z.coerce.number().int().positive().default(15),
   LIKE_REWARD_AMOUNT: z.coerce.number().int().positive().default(3),
   LIKE_MAX_REWARDS_PER_DAY: z.coerce.number().int().positive().default(5),
+  DIRECT_WEEKLY_FREE_LIMIT: z.coerce.number().int().positive().default(1),
+  DIRECT_WEEKLY_PREMIUM_LIMIT: z.coerce.number().int().positive().default(5),
   ADMIN_KEY: z.string().optional(),
   // RevenueCat Webhook
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),

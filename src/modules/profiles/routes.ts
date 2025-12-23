@@ -7,6 +7,7 @@ import { BadRequestError, NotFoundError } from "../../lib/httpErrors.js";
 const router = Router();
 
 const purposeEnum = z.enum(["CONVERSATION", "PRACTICE", "COFFEE"]);
+const genderEnum = z.enum(["MALE", "FEMALE", "OTHER"]);
 
 const updateProfileSchema = z.object({
   displayName: z.string().min(2).max(40),
@@ -14,6 +15,7 @@ const updateProfileSchema = z.object({
   city: z.string().trim().optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  gender: genderEnum.optional(),
   languagesNative: z.array(z.string()).optional(),
   languagesPractice: z.array(z.string()).optional(),
   purpose: purposeEnum,
@@ -59,6 +61,7 @@ router.put("/me", authMiddleware, async (req, res, next) => {
         city: body.city ?? null,
         lat: body.lat ?? null,
         lng: body.lng ?? null,
+        gender: body.gender ?? null,
         languagesNative: body.languagesNative ?? [],
         languagesPractice: body.languagesPractice ?? [],
         purpose: body.purpose,
@@ -72,6 +75,7 @@ router.put("/me", authMiddleware, async (req, res, next) => {
         city: body.city ?? null,
         lat: body.lat ?? null,
         lng: body.lng ?? null,
+        gender: body.gender ?? null,
         languagesNative: body.languagesNative ?? [],
         languagesPractice: body.languagesPractice ?? [],
         purpose: body.purpose,

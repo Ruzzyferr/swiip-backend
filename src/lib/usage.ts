@@ -291,4 +291,189 @@ export async function incrementLike(userId: string, isPremium: boolean): Promise
   };
 }
 
+/**
+ * Get week key in YYYY-WW format (ISO week)
+ * Uses Monday as the start of the week
+ */
+function getWeekKey(): string {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  
+  // Get the date of the Monday of the current week
+  const dayOfWeek = now.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Adjust to Monday
+  const monday = new Date(now);
+  monday.setUTCDate(now.getUTCDate() + mondayOffset);
+  monday.setUTCHours(0, 0, 0, 0);
+  
+  // Get the first Monday of the year
+  const firstMonday = new Date(Date.UTC(year, 0, 1));
+  const firstMondayDay = firstMonday.getUTCDay();
+  const firstMondayOffset = firstMondayDay === 0 ? 1 : 8 - firstMondayDay;
+  firstMonday.setUTCDate(1 + firstMondayOffset);
+  
+  // Calculate week number
+  const diffTime = monday.getTime() - firstMonday.getTime();
+  const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
+  const week = Math.floor(diffDays / 7) + 1;
+  
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+/**
+ * Reset weekly direct messages if needed
+ */
+export async function resetWeeklyDirectIfNeeded(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { lastDirectResetAt: true },
+  });
+
+  if (!user) return;
+
+  const now = new Date();
+  const lastReset = user.lastDirectResetAt;
+  
+  // Reset if never reset or if we're in a different week
+  if (!lastReset) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        dailyDirectUsed: 0,
+        lastDirectResetAt: new Date(),
+      },
+    });
+    return;
+  }
+
+  const currentWeek = getWeekKey();
+  const lastResetWeek = getWeekKeyForDate(lastReset);
+  
+  if (currentWeek !== lastResetWeek) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        dailyDirectUsed: 0,
+        lastDirectResetAt: new Date(),
+      },
+    });
+  }
+}
+
+/**
+ * Get week key for a specific date
+ * Uses Monday as the start of the week
+ */
+function getWeekKeyForDate(date: Date): string {
+  const year = date.getUTCFullYear();
+  
+  // Get the date of the Monday of the week for this date
+  const dayOfWeek = date.getUTCDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(date);
+  monday.setUTCDate(date.getUTCDate() + mondayOffset);
+  monday.setUTCHours(0, 0, 0, 0);
+  
+  // Get the first Monday of the year
+  const firstMonday = new Date(Date.UTC(year, 0, 1));
+  const firstMondayDay = firstMonday.getUTCDay();
+  const firstMondayOffset = firstMondayDay === 0 ? 1 : 8 - firstMondayDay;
+  firstMonday.setUTCDate(1 + firstMondayOffset);
+  
+  // Calculate week number
+  const diffTime = monday.getTime() - firstMonday.getTime();
+  const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
+  const week = Math.floor(diffDays / 7) + 1;
+  
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+/**
+ * Check if user can send direct message (considering weekly limits)
+ */
+export async function canSendDirect(userId: string, isPremium: boolean): Promise<{
+  canSend: boolean;
+  directUsed: number;
+  directRemaining: number;
+  directLimit: number;
+}> {
+  const env = getEnv();
+
+  // Reset if needed
+  await resetWeeklyDirectIfNeeded(userId);
+
+  // Get current user state
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      dailyDirectUsed: true,
+    },
+  });
+
+  if (!user) {
+    const limit = isPremium ? env.DIRECT_WEEKLY_PREMIUM_LIMIT : env.DIRECT_WEEKLY_FREE_LIMIT;
+    return {
+      canSend: false,
+      directUsed: 0,
+      directRemaining: 0,
+      directLimit: limit,
+    };
+  }
+
+  const directLimit = isPremium ? env.DIRECT_WEEKLY_PREMIUM_LIMIT : env.DIRECT_WEEKLY_FREE_LIMIT;
+  const directUsed = user.dailyDirectUsed;
+  const directRemaining = Math.max(0, directLimit - directUsed);
+  const canSendResult = directUsed < directLimit;
+
+  return {
+    canSend: canSendResult,
+    directUsed,
+    directRemaining,
+    directLimit,
+  };
+}
+
+/**
+ * Increment direct message count
+ */
+export async function incrementDirect(userId: string, isPremium: boolean): Promise<{
+  canSend: boolean;
+  directUsed: number;
+  directRemaining: number;
+  directLimit: number;
+}> {
+  // Reset if needed
+  await resetWeeklyDirectIfNeeded(userId);
+
+  // Check before incrementing
+  const checkResult = await canSendDirect(userId, isPremium);
+  if (!checkResult.canSend) {
+    return checkResult;
+  }
+
+  // Increment
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      dailyDirectUsed: {
+        increment: 1,
+      },
+    },
+    select: {
+      dailyDirectUsed: true,
+    },
+  });
+
+  const env = getEnv();
+  const directLimit = isPremium ? env.DIRECT_WEEKLY_PREMIUM_LIMIT : env.DIRECT_WEEKLY_FREE_LIMIT;
+  const directRemaining = Math.max(0, directLimit - user.dailyDirectUsed);
+
+  return {
+    canSend: true,
+    directUsed: user.dailyDirectUsed,
+    directRemaining,
+    directLimit,
+  };
+}
+
 

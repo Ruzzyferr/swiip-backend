@@ -284,9 +284,6 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
           },
         },
         messages: {
-          where: {
-            senderUserId: req.user.id,
-          },
           select: {
             id: true,
           },
@@ -345,6 +342,37 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
       });
     }
 
+    // First message gender restriction: In male-female matches, only females can send first message
+    if (isFirstMessage) {
+      // Get both users' profiles with gender
+      const senderProfile = await prisma.profile.findUnique({
+        where: { userId: req.user.id },
+        select: { gender: true },
+      });
+
+      const otherUserProfile = await prisma.profile.findUnique({
+        where: { userId: otherUserId },
+        select: { gender: true },
+      });
+
+      // Only apply restriction if both users have gender set and it's a male-female match
+      if (senderProfile?.gender && otherUserProfile?.gender) {
+        const isMaleFemaleMatch = 
+          (senderProfile.gender === "MALE" && otherUserProfile.gender === "FEMALE") ||
+          (senderProfile.gender === "FEMALE" && otherUserProfile.gender === "MALE");
+
+        if (isMaleFemaleMatch && senderProfile.gender === "MALE") {
+          return res.status(403).json({
+            error: {
+              code: "FIRST_MESSAGE_RESTRICTED",
+              message: "In male-female matches, the first message must be sent by the female. Please wait for them to message first.",
+              requestId: req.id || "unknown",
+            },
+          });
+        }
+      }
+    }
+
     // Check and increment message usage limit
     const usage = await incrementMSG(req.user.id, user.isPremium);
 
@@ -390,6 +418,219 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
       senderUserId: message.senderUserId,
       text: message.text,
       createdAt: message.createdAt.toISOString(),
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(new BadRequestError(error.issues[0]?.message || "Validation error"));
+    } else {
+      next(error);
+    }
+  }
+});
+
+/**
+ * GET /api/v1/chat/requests
+ * Get pending FAVORITE requests (direct messages) with first message visible
+ */
+router.get("/requests", authMiddleware, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new BadRequestError("User not found");
+    }
+
+    // Get incoming FAVORITE requests that are PENDING
+    const requests = await (prisma as any).conversationRequest.findMany({
+      where: {
+        toUserId: req.user.id,
+        status: "PENDING",
+        kind: "FAVORITE",
+      },
+      include: {
+        fromUser: {
+          include: {
+            profile: {
+              select: {
+                displayName: true,
+                photos: true,
+                city: true,
+              },
+            },
+          },
+        },
+        firstMessage: {
+          select: {
+            id: true,
+            text: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const formattedRequests = requests.map((r: any) => ({
+      requestId: r.id,
+      fromUserId: r.fromUserId,
+      createdAt: r.createdAt.toISOString(),
+      fromUser: {
+        userId: r.fromUser.id,
+        displayName: r.fromUser.profile?.displayName || "Unknown",
+        photos: r.fromUser.profile?.photos || [],
+        city: r.fromUser.profile?.city || null,
+      },
+      firstMessage: r.firstMessage
+        ? {
+            id: r.firstMessage.id,
+            text: r.firstMessage.text,
+            createdAt: r.firstMessage.createdAt.toISOString(),
+          }
+        : null,
+    }));
+
+    res.json(formattedRequests);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/chat/requests/:requestId/reply
+ * Reply to a FAVORITE request - activates conversation
+ */
+router.post("/requests/:requestId/reply", authMiddleware, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new BadRequestError("User not found");
+    }
+
+    const body = sendMessageSchema.parse(req.body);
+    const requestId = req.params.requestId;
+
+    // Find the request
+    const request = await (prisma as any).conversationRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        fromUser: {
+          include: {
+            profile: true,
+          },
+        },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundError("Request not found");
+    }
+
+    if (request.toUserId !== req.user.id) {
+      throw new ForbiddenError("You can only reply to requests sent to you");
+    }
+
+    if (request.status !== "PENDING") {
+      throw new BadRequestError("Request is not pending");
+    }
+
+    if (request.kind !== "FAVORITE") {
+      throw new BadRequestError("Can only reply to FAVORITE requests");
+    }
+
+    // Check if conversation already exists
+    let conversation = await (prisma as any).conversation.findUnique({
+      where: { requestId: request.id },
+      include: {
+        messages: {
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+
+    // Check if this is the first message in the conversation
+    const isFirstMessage = !conversation || conversation.messages.length === 0;
+
+    // First message gender restriction: In male-female matches, only females can send first message
+    if (isFirstMessage) {
+      // Get both users' profiles with gender
+      const currentUserProfile = await prisma.profile.findUnique({
+        where: { userId: req.user.id },
+        select: { gender: true },
+      });
+
+      const fromUserProfile = request.fromUser?.profile;
+
+      // Only apply restriction if both users have gender set and it's a male-female match
+      if (currentUserProfile?.gender && fromUserProfile?.gender) {
+        const isMaleFemaleMatch = 
+          (currentUserProfile.gender === "MALE" && fromUserProfile.gender === "FEMALE") ||
+          (currentUserProfile.gender === "FEMALE" && fromUserProfile.gender === "MALE");
+
+        if (isMaleFemaleMatch && currentUserProfile.gender === "MALE") {
+          return res.status(403).json({
+            error: {
+              code: "FIRST_MESSAGE_RESTRICTED",
+              message: "In male-female matches, the first message must be sent by the female. Please wait for them to message first.",
+              requestId: req.id || "unknown",
+            },
+          });
+        }
+      }
+    }
+
+    // If no conversation exists, create one
+    if (!conversation) {
+      conversation = await (prisma as any).conversation.create({
+        data: {
+          requestId: request.id,
+        },
+      });
+
+      // Update request status to ACCEPTED
+      await (prisma as any).conversationRequest.update({
+        where: { id: request.id },
+        data: { status: "ACCEPTED" },
+      });
+    }
+
+    // Create the reply message
+    const message = await (prisma as any).message.create({
+      data: {
+        conversationId: conversation.id,
+        senderUserId: req.user.id,
+        text: body.text,
+        isRequestMessage: false,
+      },
+    });
+
+    // Increment message count
+    await incrementMSG(req.user.id);
+
+    // Notify the sender
+    const currentUserProfile = await prisma.profile.findUnique({
+      where: { userId: req.user.id },
+      select: { displayName: true },
+    });
+
+    if (currentUserProfile) {
+      await notifyNewMessage(
+        request.fromUserId,
+        conversation.id,
+        currentUserProfile.displayName,
+        body.text
+      );
+    }
+
+    res.json({
+      success: true,
+      conversationId: conversation.id,
+      message: {
+        id: message.id,
+        conversationId: message.conversationId,
+        senderUserId: message.senderUserId,
+        text: message.text,
+        createdAt: message.createdAt.toISOString(),
+      },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

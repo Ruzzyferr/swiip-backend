@@ -14,6 +14,7 @@ import notificationsRoutes from "../../modules/notifications/routes.js";
 import referralRoutes from "../../modules/referral/routes.js";
 import webhooksRoutes from "../../modules/webhooks/routes.js";
 import rewardsRoutes from "../../modules/rewards/routes.js";
+import requestsRoutes from "../../modules/requests/routes.js";
 import healthRoutes from "../health.js";
 
 const router = Router();
@@ -37,6 +38,7 @@ router.use("/notifications", notificationsRoutes);
 router.use("/referral", referralRoutes);
 router.use("/webhooks", webhooksRoutes);
 router.use("/rewards", rewardsRoutes);
+router.use("/requests", requestsRoutes);
 
 export default router;
 

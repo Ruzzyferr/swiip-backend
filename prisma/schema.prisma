@@ -20,6 +20,17 @@ enum SwipeType {
   PASS
 }
 
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum RequestKind {
+  LIKE
+  FAVORITE
+}
+
 enum ReportReason {
   SPAM
   HARASSMENT
@@ -28,41 +39,52 @@ enum ReportReason {
   OTHER
 }
 
-model User {
-  id                String    @id @default(cuid())
-  email             String?   @unique
-  phone             String?   @unique
-  isBanned          Boolean   @default(false)
-  isPremium         Boolean   @default(false)
-  premiumSource     String?   // "revenuecat", "admin", etc.
-  premiumUpdatedAt  DateTime?
-  premiumExpiresAt  DateTime?
-  lastActiveAt      DateTime?
-  referralCode      String?   @unique
-  referredByUserId  String?
-  dailyLikesUsed    Int       @default(0)
-  dailyExtraLikesFromAds Int @default(0)
-  lastLikeResetAt   DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
 
-  profile      Profile?
-  sessions     Session[]
-  swipesFrom   Swipe[]  @relation("SwipeFrom")
-  swipesTo     Swipe[]  @relation("SwipeTo")
-  matchesAsA   Match[]  @relation("MatchUserA")
-  matchesAsB   Match[]  @relation("MatchUserB")
-  dailyUsage   DailyUsage[]
+model User {
+  id                     String    @id @default(cuid())
+  email                  String?   @unique
+  phone                  String?   @unique
+  isBanned               Boolean   @default(false)
+  isPremium              Boolean   @default(false)
+  premiumSource          String? // "revenuecat", "admin", etc.
+  premiumUpdatedAt       DateTime?
+  premiumExpiresAt       DateTime?
+  lastActiveAt           DateTime?
+  referralCode           String?   @unique
+  referredByUserId       String?
+  dailyLikesUsed         Int       @default(0)
+  dailyExtraLikesFromAds Int       @default(0)
+  lastLikeResetAt        DateTime?
+  dailyDirectUsed        Int       @default(0)
+  lastDirectResetAt      DateTime?
+  lastFeedShuffleAt      DateTime? // Last time feed was shuffled (12-hour cache)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  profile           Profile?
+  sessions          Session[]
+  swipesFrom        Swipe[]               @relation("SwipeFrom")
+  swipesTo          Swipe[]               @relation("SwipeTo")
+  matchesAsA        Match[]               @relation("MatchUserA")
+  matchesAsB        Match[]               @relation("MatchUserB")
+  dailyUsage        DailyUsage[]
   verificationCodes VerificationCode[]
-  blocksAsBlocker Block[] @relation("Blocker")
-  blocksAsBlocked Block[] @relation("Blocked")
-  reportsAsReporter Report[] @relation("Reporter")
-  reportsAsReported Report[] @relation("Reported")
-  boosts Boost[]
-  pushTokens PushToken[]
-  referredBy User? @relation("ReferredBy", fields: [referredByUserId], references: [id])
-  referredUsers User[] @relation("ReferredBy")
-  billingEvents BillingEvent[]
+  blocksAsBlocker   Block[]               @relation("Blocker")
+  blocksAsBlocked   Block[]               @relation("Blocked")
+  reportsAsReporter Report[]              @relation("Reporter")
+  reportsAsReported Report[]              @relation("Reported")
+  boosts            Boost[]
+  pushTokens        PushToken[]
+  referredBy        User?                 @relation("ReferredBy", fields: [referredByUserId], references: [id])
+  referredUsers     User[]                @relation("ReferredBy")
+  billingEvents     BillingEvent[]
+  requestsFrom      ConversationRequest[] @relation("RequestFrom")
+  requestsTo        ConversationRequest[] @relation("RequestTo")
 
   @@index([email])
   @@index([phone])
@@ -81,6 +103,7 @@ model Profile {
   country           String?
   lat               Float?
   lng               Float?
+  gender            Gender?
   languagesNative   String[] @default([])
   languagesPractice String[] @default([])
   purpose           Purpose
@@ -94,6 +117,7 @@ model Profile {
 
   @@index([userId])
   @@index([lat, lng])
+  @@index([gender])
 }
 
 model Session {
@@ -132,8 +156,8 @@ model Match {
   userBId   String
   createdAt DateTime @default(now())
 
-  userA        User         @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
-  userB        User         @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  userA        User          @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB        User          @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
   conversation Conversation?
 
   // Enforce canonical ordering: userAId < userBId always
@@ -145,33 +169,41 @@ model Match {
 
 model Conversation {
   id        String   @id @default(cuid())
-  matchId   String   @unique
+  matchId   String?  @unique
+  requestId String?  @unique
   createdAt DateTime @default(now())
 
-  match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  match    Match?               @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  request  ConversationRequest? @relation(fields: [requestId], references: [id], onDelete: Cascade)
   messages Message[]
 
   @@index([matchId])
+  @@index([requestId])
 }
 
 model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  senderUserId   String
-  text           String       @db.VarChar(2000)
-  createdAt      DateTime     @default(now())
+  id               String   @id @default(cuid())
+  conversationId   String?
+  senderUserId     String
+  text             String   @db.VarChar(2000)
+  isRequestMessage Boolean  @default(false)
+  requestId        String?
+  createdAt        DateTime @default(now())
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversation    Conversation?        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  request         ConversationRequest? @relation("RequestMessages", fields: [requestId], references: [id], onDelete: Cascade)
+  firstMessageFor ConversationRequest? @relation("FirstMessage")
 
   @@index([conversationId])
   @@index([senderUserId])
   @@index([createdAt])
+  @@index([requestId])
 }
 
 model DailyUsage {
   id        String   @id @default(cuid())
   userId    String
-  day       String   // Format: YYYY-MM-DD
+  day       String // Format: YYYY-MM-DD
   aiCount   Int      @default(0)
   msgCount  Int      @default(0)
   createdAt DateTime @default(now())
@@ -187,8 +219,8 @@ model DailyUsage {
 model VerificationCode {
   id        String   @id @default(cuid())
   userId    String
-  code      String   // 6-digit code
-  type      String   // "EMAIL" or "PHONE"
+  code      String // 6-digit code
+  type      String // "EMAIL" or "PHONE"
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -201,10 +233,10 @@ model VerificationCode {
 }
 
 model Block {
-  id           String   @id @default(cuid())
+  id            String   @id @default(cuid())
   blockerUserId String
   blockedUserId String
-  createdAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   blocker User @relation("Blocker", fields: [blockerUserId], references: [id], onDelete: Cascade)
   blocked User @relation("Blocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
@@ -215,12 +247,12 @@ model Block {
 }
 
 model Report {
-  id            String      @id @default(cuid())
+  id             String       @id @default(cuid())
   reporterUserId String
   reportedUserId String
-  reason        ReportReason
-  details       String?     @db.VarChar(500)
-  createdAt     DateTime    @default(now())
+  reason         ReportReason
+  details        String?      @db.VarChar(500)
+  createdAt      DateTime     @default(now())
 
   reporter User @relation("Reporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
   reported User @relation("Reported", fields: [reportedUserId], references: [id], onDelete: Cascade)
@@ -235,7 +267,7 @@ model Boost {
   userId    String
   startsAt  DateTime
   endsAt    DateTime
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -249,12 +281,12 @@ enum PushTokenPlatform {
 }
 
 model PushToken {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String            @unique
   platform  PushTokenPlatform
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -263,15 +295,38 @@ model PushToken {
 }
 
 model BillingEvent {
-  id        String   @id @default(cuid())
-  userId    String
-  eventType String   // "purchase", "renewal", "cancellation", "expiration", etc.
-  payloadJson String @db.Text // Full webhook payload as JSON string
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  eventType   String // "purchase", "renewal", "cancellation", "expiration", etc.
+  payloadJson String   @db.Text // Full webhook payload as JSON string
+  createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([eventType])
   @@index([createdAt])
+}
+
+model ConversationRequest {
+  id             String        @id @default(cuid())
+  fromUserId     String
+  toUserId       String
+  status         RequestStatus @default(PENDING)
+  kind           RequestKind
+  firstMessageId String?       @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  fromUser     User          @relation("RequestFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser       User          @relation("RequestTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  firstMessage Message?      @relation("FirstMessage", fields: [firstMessageId], references: [id], onDelete: SetNull)
+  messages     Message[]     @relation("RequestMessages")
+  conversation Conversation?
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId, status])
+  @@index([toUserId, status])
+  @@index([status])
+  @@index([kind])
 }

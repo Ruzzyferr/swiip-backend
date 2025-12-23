@@ -67,6 +67,7 @@ async function main() {
   // Clear existing data (in correct order due to foreign keys)
   console.log("🧹 Cleaning existing data...");
   await prisma.message.deleteMany();
+  await prisma.conversationRequest.deleteMany();
   await prisma.conversation.deleteMany();
   await prisma.match.deleteMany();
   await prisma.swipe.deleteMany();
@@ -102,6 +103,8 @@ async function main() {
         dailyLikesUsed: 5,
         dailyExtraLikesFromAds: 6, // Watched 2 ads (3+3)
         lastLikeResetAt: new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago (same day)
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "Alex",
@@ -110,6 +113,7 @@ async function main() {
             country: "TR",
             lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1, // Slight variation
             lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
             languagesNative: ["Turkish", "English"],
             languagesPractice: ["Spanish", "French"],
             purpose: "CONVERSATION",
@@ -138,6 +142,8 @@ async function main() {
         dailyLikesUsed: 0,
         dailyExtraLikesFromAds: 0,
         lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "Maria",
@@ -146,6 +152,7 @@ async function main() {
             country: "TR",
             lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
             lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
             languagesNative: ["Turkish", "English"],
             languagesPractice: ["Italian", "German"],
             purpose: "PRACTICE",
@@ -170,6 +177,8 @@ async function main() {
         dailyLikesUsed: 14, // Near limit (15)
         dailyExtraLikesFromAds: 9, // Watched 3 ads (3+3+3)
         lastLikeResetAt: new Date(now.getTime() - 3 * 60 * 60 * 1000),
+        dailyDirectUsed: 1, // Used 1 direct message today
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "John",
@@ -178,6 +187,7 @@ async function main() {
             country: "TR",
             lat: ANKARA_LAT + (Math.random() - 0.5) * 0.1,
             lng: ANKARA_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
             languagesNative: ["English"],
             languagesPractice: ["Turkish", "Spanish"],
             purpose: "COFFEE",
@@ -203,6 +213,8 @@ async function main() {
         dailyLikesUsed: 0,
         dailyExtraLikesFromAds: 0,
         lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "Sophie",
@@ -211,6 +223,7 @@ async function main() {
             country: "FR", // French user in Turkey
             lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
             lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
             languagesNative: ["French", "English"],
             languagesPractice: ["Turkish", "Spanish"],
             purpose: "CONVERSATION",
@@ -235,6 +248,8 @@ async function main() {
         dailyLikesUsed: 15, // At limit
         dailyExtraLikesFromAds: 0,
         lastLikeResetAt: new Date(now.getTime() - 4 * 60 * 60 * 1000),
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "David",
@@ -243,6 +258,7 @@ async function main() {
             country: "TR",
             lat: IZMIR_LAT + (Math.random() - 0.5) * 0.1,
             lng: IZMIR_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
             languagesNative: ["English", "German"],
             languagesPractice: ["Turkish"],
             purpose: "PRACTICE",
@@ -266,6 +282,8 @@ async function main() {
         dailyLikesUsed: 10,
         dailyExtraLikesFromAds: 15, // Watched 5 ads (max)
         lastLikeResetAt: new Date(now.getTime() - 1 * 60 * 60 * 1000),
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "Lisa",
@@ -274,6 +292,7 @@ async function main() {
             country: "TR",
             lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
             lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
             languagesNative: ["Turkish"],
             languagesPractice: ["English", "French"],
             purpose: "COFFEE",
@@ -298,6 +317,8 @@ async function main() {
         dailyLikesUsed: 3,
         dailyExtraLikesFromAds: 0,
         lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "Michael",
@@ -306,6 +327,7 @@ async function main() {
             country: "TR",
             lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
             lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
             languagesNative: ["English"],
             languagesPractice: ["Turkish", "Arabic"],
             purpose: "CONVERSATION",
@@ -329,6 +351,8 @@ async function main() {
         dailyLikesUsed: 0,
         dailyExtraLikesFromAds: 0,
         lastLikeResetAt: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Yesterday (needs reset)
+        dailyDirectUsed: 0,
+        lastDirectResetAt: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Yesterday (needs reset)
         profile: {
           create: {
             displayName: "Emma",
@@ -337,6 +361,7 @@ async function main() {
             country: "TR",
             lat: ANKARA_LAT + (Math.random() - 0.5) * 0.1,
             lng: ANKARA_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
             languagesNative: ["English", "Spanish"],
             languagesPractice: ["Turkish"],
             purpose: "PRACTICE",
@@ -361,6 +386,8 @@ async function main() {
         dailyLikesUsed: 2,
         dailyExtraLikesFromAds: 0,
         lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "Tom",
@@ -369,6 +396,7 @@ async function main() {
             country: "TR",
             lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
             lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
             languagesNative: ["English"],
             languagesPractice: ["Turkish", "German"],
             purpose: "CONVERSATION",
@@ -395,6 +423,8 @@ async function main() {
         dailyLikesUsed: 0, // Premium = unlimited
         dailyExtraLikesFromAds: 0,
         lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
         profile: {
           create: {
             displayName: "Sarah",
@@ -403,6 +433,7 @@ async function main() {
             country: "GB", // UK user in Turkey
             lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
             lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
             languagesNative: ["English"],
             languagesPractice: ["Turkish", "French"],
             purpose: "PRACTICE",
@@ -459,97 +490,168 @@ async function main() {
 
   console.log(`✅ Created sessions`);
 
-  // Create swipes
-  console.log("💫 Creating swipes...");
+  // Create ConversationRequests (replacing old swipes)
+  console.log("💫 Creating conversation requests...");
 
-  // Alex likes Maria (mutual - will create match)
-  await prisma.swipe.create({
+  // Alex likes Maria (mutual - will create match when accepted)
+  const alexLikesMaria = await prisma.conversationRequest.create({
     data: {
       fromUserId: users[0].id,
       toUserId: users[1].id,
-      type: "LIKE",
+      status: "PENDING",
+      kind: "LIKE",
     },
   });
-  await prisma.swipe.create({
+  const mariaLikesAlex = await prisma.conversationRequest.create({
     data: {
       fromUserId: users[1].id,
       toUserId: users[0].id,
-      type: "LIKE",
+      status: "ACCEPTED", // Maria already accepted
+      kind: "LIKE",
     },
   });
 
   // Alex likes Sophie (waiting for her to like back)
-  await prisma.swipe.create({
+  await prisma.conversationRequest.create({
     data: {
       fromUserId: users[0].id,
       toUserId: users[3].id,
-      type: "LIKE",
+      status: "PENDING",
+      kind: "LIKE",
     },
   });
 
-  // Alex passes on John
-  await prisma.swipe.create({
+  // Alex sends FAVORITE (direct message) to Sarah
+  const alexFavoritesSarah = await prisma.conversationRequest.create({
     data: {
       fromUserId: users[0].id,
-      toUserId: users[2].id,
-      type: "PASS",
+      toUserId: users[9].id,
+      status: "PENDING",
+      kind: "FAVORITE",
     },
   });
+  // Create the first message for the FAVORITE request
+  const favoriteMessage = await prisma.message.create({
+    data: {
+      senderUserId: users[0].id,
+      text: "Hi Sarah! I saw your profile and thought we'd have great conversations. Would you like to practice Turkish together?",
+      isRequestMessage: true,
+      requestId: alexFavoritesSarah.id,
+    },
+  });
+  // Link the first message to the request
+  await prisma.conversationRequest.update({
+    where: { id: alexFavoritesSarah.id },
+    data: { firstMessageId: favoriteMessage.id },
+  });
+  // Update Alex's direct message usage
+  await prisma.user.update({
+    where: { id: users[0].id },
+    data: { dailyDirectUsed: 1 },
+  });
 
-  // David, Lisa, Tom like Alex (for "who liked you" testing)
-  await prisma.swipe.create({
+  // David, Lisa, Tom like Alex (incoming requests for Alex)
+  await prisma.conversationRequest.create({
     data: {
       fromUserId: users[4].id,
       toUserId: users[0].id,
-      type: "LIKE",
+      status: "PENDING",
+      kind: "LIKE",
     },
   });
-  await prisma.swipe.create({
+  await prisma.conversationRequest.create({
     data: {
       fromUserId: users[5].id,
       toUserId: users[0].id,
-      type: "LIKE",
+      status: "PENDING",
+      kind: "LIKE",
     },
   });
-  await prisma.swipe.create({
+  await prisma.conversationRequest.create({
     data: {
       fromUserId: users[8].id,
       toUserId: users[0].id,
-      type: "LIKE",
+      status: "PENDING",
+      kind: "LIKE",
     },
   });
 
-  // Maria likes Sarah (mutual - will create match)
-  await prisma.swipe.create({
+  // Maria likes Sarah (mutual - will create match when accepted)
+  const mariaLikesSarah = await prisma.conversationRequest.create({
     data: {
       fromUserId: users[1].id,
       toUserId: users[9].id,
-      type: "LIKE",
+      status: "PENDING",
+      kind: "LIKE",
     },
   });
-  await prisma.swipe.create({
+  const sarahLikesMaria = await prisma.conversationRequest.create({
     data: {
       fromUserId: users[9].id,
       toUserId: users[1].id,
-      type: "LIKE",
+      status: "ACCEPTED", // Sarah already accepted
+      kind: "LIKE",
     },
   });
 
   // John likes Lisa
-  await prisma.swipe.create({
+  await prisma.conversationRequest.create({
     data: {
       fromUserId: users[2].id,
       toUserId: users[5].id,
-      type: "LIKE",
+      status: "PENDING",
+      kind: "LIKE",
     },
   });
 
-  console.log("✅ Created swipes");
+  // John sends FAVORITE to Emma (direct message)
+  const johnFavoritesEmma = await prisma.conversationRequest.create({
+    data: {
+      fromUserId: users[2].id,
+      toUserId: users[7].id,
+      status: "PENDING",
+      kind: "FAVORITE",
+    },
+  });
+  const johnFavoriteMessage = await prisma.message.create({
+    data: {
+      senderUserId: users[2].id,
+      text: "Hey Emma! I'd love to practice Turkish with you. Are you available for a language exchange?",
+      isRequestMessage: true,
+      requestId: johnFavoritesEmma.id,
+    },
+  });
+  await prisma.conversationRequest.update({
+    where: { id: johnFavoritesEmma.id },
+    data: { firstMessageId: johnFavoriteMessage.id },
+  });
+  // Update John's direct message usage (already at 1 from seed data)
+  await prisma.user.update({
+    where: { id: users[2].id },
+    data: { dailyDirectUsed: 1 },
+  });
 
-  // Create matches
+  // Sophie declines Michael's request (for testing DECLINED status)
+  await prisma.conversationRequest.create({
+    data: {
+      fromUserId: users[6].id,
+      toUserId: users[3].id,
+      status: "DECLINED",
+      kind: "LIKE",
+    },
+  });
+
+  console.log("✅ Created conversation requests");
+
+  // Create matches (from accepted LIKE requests)
   console.log("💕 Creating matches...");
 
-  // Match: Alex <-> Maria
+  // Match: Alex <-> Maria (both accepted)
+  // Accept Alex's request to Maria
+  await prisma.conversationRequest.update({
+    where: { id: alexLikesMaria.id },
+    data: { status: "ACCEPTED" },
+  });
   const [alexId, mariaId] =
     users[0].id < users[1].id ? [users[0].id, users[1].id] : [users[1].id, users[0].id];
   const match1 = await prisma.match.create({
@@ -559,7 +661,12 @@ async function main() {
     },
   });
 
-  // Match: Maria <-> Sarah
+  // Match: Maria <-> Sarah (both accepted)
+  // Accept Maria's request to Sarah
+  await prisma.conversationRequest.update({
+    where: { id: mariaLikesSarah.id },
+    data: { status: "ACCEPTED" },
+  });
   const [mariaId2, sarahId] =
     users[1].id < users[9].id ? [users[1].id, users[9].id] : [users[9].id, users[1].id];
   const match2 = await prisma.match.create({
@@ -574,17 +681,22 @@ async function main() {
   // Create conversations
   console.log("💬 Creating conversations...");
 
+  // Conversation 1: Alex <-> Maria (from match)
   const conversation1 = await prisma.conversation.create({
     data: {
       matchId: match1.id,
     },
   });
 
+  // Conversation 2: Maria <-> Sarah (from match)
   const conversation2 = await prisma.conversation.create({
     data: {
       matchId: match2.id,
     },
   });
+
+  // Conversation 3: Alex -> Sarah (from FAVORITE request - pending, no conversation yet)
+  // This will be created when Sarah replies or accepts
 
   console.log("✅ Created conversations");
 
@@ -632,6 +744,9 @@ async function main() {
   });
 
   console.log("✅ Created messages");
+
+  // Create request messages (for FAVORITE requests)
+  console.log("📩 Request messages already created with FAVORITE requests");
 
   // Create DailyUsage records
   console.log("📊 Creating daily usage records...");
@@ -805,11 +920,12 @@ async function main() {
   console.log("   - Referral Code: ALEX01");
   console.log("   - 1 match with Maria (with conversation and messages)");
   console.log("   - Liked Sophie (waiting for her to like back)");
-  console.log("   - Passed on John");
-  console.log("   - Has likes from David, Lisa, and Tom");
+  console.log("   - Sent FAVORITE (direct message) to Sarah");
+  console.log("   - Has incoming LIKE requests from David, Lisa, and Tom");
   console.log("   - Active boost (ends in 2 hours)");
   console.log("   - Daily usage: 3 AI, 15 messages");
   console.log("   - Daily likes: 5 used, 6 extra from ads (total: 21 available)");
+  console.log("   - Daily direct messages: 1 used");
   console.log("   - Referred: Maria and Tom");
   console.log("   - Location: Istanbul, TR");
   console.log("\nUser 2 (Maria) - PREMIUM:");
@@ -817,17 +933,22 @@ async function main() {
   console.log("   - Referred by: Alex (ALEX01)");
   console.log("   - Active boost (ends in 5 hours)");
   console.log("   - Daily usage: 5 AI, 20 messages");
-  console.log("   - Match with Sarah");
+  console.log("   - Match with Alex (accepted LIKE request)");
+  console.log("   - Match with Sarah (accepted LIKE request)");
   console.log("   - Location: Istanbul, TR");
   console.log("\nUser 3 (John) - FREE:");
   console.log("   - Referral Code: JOHN03");
   console.log("   - Near daily limits (8 AI, 25 messages)");
   console.log("   - Near like limit: 14 used + 9 from ads = 23/24 total");
+  console.log("   - Daily direct messages: 1 used (sent FAVORITE to Emma)");
+  console.log("   - Sent LIKE request to Lisa");
   console.log("   - Blocked User 7 (Michael)");
   console.log("   - Location: Ankara, TR");
   console.log("\nUser 4 (Sophie) - PREMIUM:");
   console.log("   - Referral Code: SOPHIE");
   console.log("   - Expired boost (for testing)");
+  console.log("   - Has incoming LIKE request from Alex (pending)");
+  console.log("   - Declined LIKE request from Michael");
   console.log("   - Reported User 8 (Emma)");
   console.log("   - Location: Istanbul, TR (from France)");
   console.log("\nUser 5 (David) - FREE:");
@@ -846,8 +967,9 @@ async function main() {
   console.log("\nUser 8 (Emma) - FREE:");
   console.log("   - Referral Code: EMMA08");
   console.log("   - Reported by User 4 (Sophie)");
+  console.log("   - Has incoming FAVORITE request from John (with direct message)");
   console.log("   - Inactive (last active 3 days ago)");
-  console.log("   - Needs like reset (last reset yesterday)");
+  console.log("   - Needs like/direct reset (last reset yesterday)");
   console.log("   - Location: Ankara, TR");
   console.log("\nUser 9 (Tom) - FREE:");
   console.log("   - Referral Code: TOM009");
@@ -856,7 +978,8 @@ async function main() {
   console.log("\nUser 10 (Sarah) - PREMIUM:");
   console.log("   - Referral Code: SARAH1");
   console.log("   - From UK (GB), living in Istanbul");
-  console.log("   - Match with Maria");
+  console.log("   - Match with Maria (accepted LIKE request)");
+  console.log("   - Has incoming FAVORITE request from Alex (with direct message)");
   console.log("   - Location: Istanbul, TR");
   console.log("\n💡 Testing Scenarios:");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -886,12 +1009,28 @@ async function main() {
   console.log("\n✅ Discovery Feed Testing:");
   console.log("   - Blocked users excluded (Michael won't show to John)");
   console.log("   - Reported users excluded (Emma won't show to Sophie)");
+  console.log("   - Users with pending/accepted/declined requests excluded from each other");
   console.log("   - Boosted users appear first (Alex, Maria)");
   console.log("   - Cultural preference: Sophie (FR), Sarah (GB) for international");
   console.log("\n✅ Like Limit Testing:");
   console.log("   - David: At limit (should show modal)");
   console.log("   - John: Near limit (14/24)");
   console.log("   - Lisa: Has extra from ads (15)");
+  console.log("   - Emma: Needs reset (yesterday's reset)");
+  console.log("\n✅ Conversation Request System:");
+  console.log("   - LIKE requests: PENDING, ACCEPTED, DECLINED statuses");
+  console.log("   - FAVORITE requests: Direct messages with first message");
+  console.log("   - Alex -> Sarah: FAVORITE (pending, with message)");
+  console.log("   - John -> Emma: FAVORITE (pending, with message)");
+  console.log("   - Alex <-> Maria: Mutual LIKE (both ACCEPTED, created match)");
+  console.log("   - Maria <-> Sarah: Mutual LIKE (both ACCEPTED, created match)");
+  console.log("   - Alex -> Sophie: LIKE (pending, waiting for response)");
+  console.log("   - Michael -> Sophie: LIKE (DECLINED)");
+  console.log("   - Incoming requests for Alex: David, Lisa, Tom");
+  console.log("\n✅ Direct Message Quota:");
+  console.log("   - Alex: 1 used (sent to Sarah)");
+  console.log("   - John: 1 used (sent to Emma)");
+  console.log("   - Others: 0 used");
   console.log("   - Emma: Needs reset (yesterday's reset)");
 }
 
