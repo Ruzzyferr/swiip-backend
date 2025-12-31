@@ -121,6 +121,8 @@ async function main() {
             photos: [
               "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
               "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+              "https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?w=400",
+              "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
             ],
           },
         },
@@ -160,6 +162,8 @@ async function main() {
             photos: [
               "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
               "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
+              "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
             ],
           },
         },
@@ -194,6 +198,8 @@ async function main() {
             bio: "Coffee lover and language learner. Let's meet for a chat! I'm always up for a good conversation over coffee.",
             photos: [
               "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+              "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400",
+              "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400",
             ],
           },
         },
@@ -231,6 +237,7 @@ async function main() {
             photos: [
               "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400",
               "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400",
+              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
             ],
           },
         },
@@ -265,6 +272,8 @@ async function main() {
             bio: "Working professional looking to improve my Turkish skills. Let's practice together!",
             photos: [
               "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+              "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
+              "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400",
             ],
           },
         },
@@ -300,6 +309,7 @@ async function main() {
             photos: [
               "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
               "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
             ],
           },
         },
@@ -334,6 +344,8 @@ async function main() {
             bio: "Traveler and language exchange enthusiast. Always up for a good conversation!",
             photos: [
               "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
+              "https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?w=400",
+              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
             ],
           },
         },
@@ -368,6 +380,8 @@ async function main() {
             bio: "Language teacher looking to practice Turkish with native speakers.",
             photos: [
               "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400",
+              "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
             ],
           },
         },
@@ -403,6 +417,8 @@ async function main() {
             bio: "New to Istanbul! Looking to make friends and practice languages.",
             photos: [
               "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+              "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400",
+              "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400",
             ],
           },
         },
@@ -441,6 +457,1114 @@ async function main() {
             photos: [
               "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
               "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
+              "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 11: Lena - German learning Turkish
+    prisma.user.create({
+      data: {
+        email: "lena@swiip.com".toLowerCase().trim(),
+        phone: "+905551234577".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 20 * 60 * 1000),
+        referralCode: "LENA01",
+        dailyLikesUsed: 3,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Lena",
+            birthYear: 1996,
+            city: "Istanbul",
+            country: "DE",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["German", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "PRACTICE",
+            bio: "German expat working in tech. Love exploring Istanbul's hidden gems!",
+            photos: [
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
+              "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400",
+              "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 12: Kerem - Turkish learning Spanish
+    prisma.user.create({
+      data: {
+        email: "kerem@swiip.com".toLowerCase().trim(),
+        phone: "+905551234578".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 45 * 60 * 1000),
+        referralCode: "KEREM1",
+        dailyLikesUsed: 7,
+        dailyExtraLikesFromAds: 3,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Kerem",
+            birthYear: 1994,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Turkish"],
+            languagesPractice: ["Spanish", "Portuguese"],
+            purpose: "CONVERSATION",
+            bio: "Software developer by day, language enthusiast by night. Planning a trip to South America!",
+            photos: [
+              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+              "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 13: Yuki - Japanese learning Turkish
+    prisma.user.create({
+      data: {
+        email: "yuki@swiip.com".toLowerCase().trim(),
+        phone: "+905551234579".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 10 * 60 * 1000),
+        referralCode: "YUKI01",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 1,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Yuki",
+            birthYear: 1998,
+            city: "Istanbul",
+            country: "JP",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Japanese", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "COFFEE",
+            bio: "Japanese food blogger exploring Turkish cuisine. Let's grab coffee and chat!",
+            photos: [
+              "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400",
+              "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400",
+              "https://images.unsplash.com/photo-1491349174775-aaafddd81942?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 14: Carlos - Spanish learning English
+    prisma.user.create({
+      data: {
+        email: "carlos@swiip.com".toLowerCase().trim(),
+        phone: "+905551234580".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+        referralCode: "CARLO1",
+        dailyLikesUsed: 5,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Carlos",
+            birthYear: 1991,
+            city: "Istanbul",
+            country: "ES",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Spanish"],
+            languagesPractice: ["English", "Turkish"],
+            purpose: "PRACTICE",
+            bio: "Spanish architect working on exciting projects in Istanbul. Love history and design!",
+            photos: [
+              "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+              "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 15: Zeynep - Turkish learning French
+    prisma.user.create({
+      data: {
+        email: "zeynep@swiip.com".toLowerCase().trim(),
+        phone: "+905551234581".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 35 * 60 * 1000),
+        referralCode: "ZEYNE1",
+        dailyLikesUsed: 2,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Zeynep",
+            birthYear: 1999,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Turkish", "English"],
+            languagesPractice: ["French"],
+            purpose: "CONVERSATION",
+            bio: "University student studying literature. Dreaming of Paris! 📚",
+            photos: [
+              "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
+              "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 16: Marco - Italian photographer
+    prisma.user.create({
+      data: {
+        email: "marco@swiip.com".toLowerCase().trim(),
+        phone: "+905551234582".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 25 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 5 * 60 * 1000),
+        referralCode: "MARCO1",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 2,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Marco",
+            birthYear: 1990,
+            city: "Istanbul",
+            country: "IT",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Italian", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "COFFEE",
+            bio: "Photographer capturing the beauty of Istanbul. Always up for coffee and conversation!",
+            photos: [
+              "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400",
+              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+              "https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 17: Anna - Russian learning Turkish
+    prisma.user.create({
+      data: {
+        email: "anna@swiip.com".toLowerCase().trim(),
+        phone: "+905551234583".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 1 * 60 * 60 * 1000),
+        referralCode: "ANNA01",
+        dailyLikesUsed: 10,
+        dailyExtraLikesFromAds: 6,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Anna",
+            birthYear: 1995,
+            city: "Istanbul",
+            country: "RU",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Russian", "English"],
+            languagesPractice: ["Turkish", "Spanish"],
+            purpose: "PRACTICE",
+            bio: "Marketing specialist. Love traveling and meeting people from different cultures!",
+            photos: [
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
+              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
+              "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 18: Burak - Turkish learning German
+    prisma.user.create({
+      data: {
+        email: "burak@swiip.com".toLowerCase().trim(),
+        phone: "+905551234584".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 25 * 60 * 1000),
+        referralCode: "BURAK1",
+        dailyLikesUsed: 4,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Burak",
+            birthYear: 1993,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Turkish"],
+            languagesPractice: ["German", "English"],
+            purpose: "CONVERSATION",
+            bio: "Engineer planning to move to Germany. Looking for language partners!",
+            photos: [
+              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+              "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
+              "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 19: Olivia - British learning Spanish
+    prisma.user.create({
+      data: {
+        email: "olivia@swiip.com".toLowerCase().trim(),
+        phone: "+905551234585".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 8 * 60 * 1000),
+        referralCode: "OLIVI1",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 1,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Olivia",
+            birthYear: 1997,
+            city: "Ankara",
+            country: "GB",
+            lat: ANKARA_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ANKARA_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["English"],
+            languagesPractice: ["Spanish", "Turkish"],
+            purpose: "COFFEE",
+            bio: "Diplomat in Ankara. Love languages, politics, and good coffee!",
+            photos: [
+              "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
+              "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 20: Ahmet - Turkish learning Japanese
+    prisma.user.create({
+      data: {
+        email: "ahmet@swiip.com".toLowerCase().trim(),
+        phone: "+905551234586".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 55 * 60 * 1000),
+        referralCode: "AHMET1",
+        dailyLikesUsed: 8,
+        dailyExtraLikesFromAds: 3,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Ahmet",
+            birthYear: 1992,
+            city: "Izmir",
+            country: "TR",
+            lat: IZMIR_LAT + (Math.random() - 0.5) * 0.1,
+            lng: IZMIR_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Turkish", "English"],
+            languagesPractice: ["Japanese"],
+            purpose: "PRACTICE",
+            bio: "Anime enthusiast learning Japanese. Yoroshiku onegaishimasu! 🇯🇵",
+            photos: [
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+              "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 21: Sofia - Brazilian learning Turkish
+    prisma.user.create({
+      data: {
+        email: "sofia@swiip.com".toLowerCase().trim(),
+        phone: "+905551234587".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 15 * 60 * 1000),
+        referralCode: "SOFIA1",
+        dailyLikesUsed: 6,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Sofia",
+            birthYear: 1996,
+            city: "Istanbul",
+            country: "BR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Portuguese", "Spanish"],
+            languagesPractice: ["Turkish", "English"],
+            purpose: "CONVERSATION",
+            bio: "Brazilian dancer teaching salsa in Istanbul. Let's dance and talk! 💃",
+            photos: [
+              "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400",
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
+              "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 22: Mert - Turkish learning Korean
+    prisma.user.create({
+      data: {
+        email: "mert@swiip.com".toLowerCase().trim(),
+        phone: "+905551234588".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 22 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 3 * 60 * 1000),
+        referralCode: "MERT01",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 3,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Mert",
+            birthYear: 2000,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Turkish"],
+            languagesPractice: ["Korean", "Japanese"],
+            purpose: "PRACTICE",
+            bio: "K-pop fan learning Korean. Ask me about BTS! 🎵",
+            photos: [
+              "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400",
+              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+              "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 23: Clara - French learning Turkish
+    prisma.user.create({
+      data: {
+        email: "clara@swiip.com".toLowerCase().trim(),
+        phone: "+905551234589".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 40 * 60 * 1000),
+        referralCode: "CLARA1",
+        dailyLikesUsed: 9,
+        dailyExtraLikesFromAds: 6,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Clara",
+            birthYear: 1994,
+            city: "Istanbul",
+            country: "FR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["French", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "COFFEE",
+            bio: "French chef running a bistro in Kadıköy. Love Turkish cuisine!",
+            photos: [
+              "https://images.unsplash.com/photo-1491349174775-aaafddd81942?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
+              "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 24: Can - Turkish learning Chinese
+    prisma.user.create({
+      data: {
+        email: "can@swiip.com".toLowerCase().trim(),
+        phone: "+905551234590".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 70 * 60 * 1000),
+        referralCode: "CAN001",
+        dailyLikesUsed: 3,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Can",
+            birthYear: 1988,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Turkish", "English"],
+            languagesPractice: ["Chinese"],
+            purpose: "CONVERSATION",
+            bio: "Import/export businessman. Learning Mandarin for work. 你好!",
+            photos: [
+              "https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?w=400",
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 25: Nina - Ukrainian learning Turkish
+    prisma.user.create({
+      data: {
+        email: "nina@swiip.com".toLowerCase().trim(),
+        phone: "+905551234591".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 29 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 2 * 60 * 1000),
+        referralCode: "NINA01",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Nina",
+            birthYear: 1997,
+            city: "Istanbul",
+            country: "UA",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Ukrainian", "Russian", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "PRACTICE",
+            bio: "UI/UX designer. Love art, design, and learning new languages!",
+            photos: [
+              "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400",
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
+              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 26: Deniz - Turkish learning Italian
+    prisma.user.create({
+      data: {
+        email: "deniz@swiip.com".toLowerCase().trim(),
+        phone: "+905551234592".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 90 * 60 * 1000),
+        referralCode: "DENIZ1",
+        dailyLikesUsed: 15,
+        dailyExtraLikesFromAds: 9,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Deniz",
+            birthYear: 1995,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Turkish"],
+            languagesPractice: ["Italian", "French"],
+            purpose: "CONVERSATION",
+            bio: "Fashion designer with an obsession for Italian style. Ciao! 👗",
+            photos: [
+              "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+              "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400",
+              "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 27: James - American learning Turkish
+    prisma.user.create({
+      data: {
+        email: "james@swiip.com".toLowerCase().trim(),
+        phone: "+905551234593".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 120 * 60 * 1000),
+        referralCode: "JAMES1",
+        dailyLikesUsed: 2,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "James",
+            birthYear: 1989,
+            city: "Istanbul",
+            country: "US",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["English"],
+            languagesPractice: ["Turkish"],
+            purpose: "COFFEE",
+            bio: "American writer working on a novel set in Istanbul. Need local insights!",
+            photos: [
+              "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400",
+              "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400",
+              "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 28: Elif - Turkish learning Russian
+    prisma.user.create({
+      data: {
+        email: "elif@swiip.com".toLowerCase().trim(),
+        phone: "+905551234594".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 5 * 60 * 1000),
+        referralCode: "ELIF01",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 2,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Elif",
+            birthYear: 1998,
+            city: "Ankara",
+            country: "TR",
+            lat: ANKARA_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ANKARA_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Turkish", "English"],
+            languagesPractice: ["Russian"],
+            purpose: "PRACTICE",
+            bio: "International relations student. Studying Russian literature! 📖",
+            photos: [
+              "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
+              "https://images.unsplash.com/photo-1491349174775-aaafddd81942?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 29: Lucas - Dutch learning Turkish
+    prisma.user.create({
+      data: {
+        email: "lucas@swiip.com".toLowerCase().trim(),
+        phone: "+905551234595".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 30 * 60 * 1000),
+        referralCode: "LUCAS1",
+        dailyLikesUsed: 7,
+        dailyExtraLikesFromAds: 3,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Lucas",
+            birthYear: 1991,
+            city: "Istanbul",
+            country: "NL",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Dutch", "English", "German"],
+            languagesPractice: ["Turkish"],
+            purpose: "CONVERSATION",
+            bio: "Dutch entrepreneur. Running a tech startup in Istanbul!",
+            photos: [
+              "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400",
+              "https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?w=400",
+              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 30: Selin - Turkish learning English
+    prisma.user.create({
+      data: {
+        email: "selin@swiip.com".toLowerCase().trim(),
+        phone: "+905551234596".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 12 * 60 * 1000),
+        referralCode: "SELIN1",
+        dailyLikesUsed: 1,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Selin",
+            birthYear: 2001,
+            city: "Izmir",
+            country: "TR",
+            lat: IZMIR_LAT + (Math.random() - 0.5) * 0.1,
+            lng: IZMIR_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Turkish"],
+            languagesPractice: ["English", "Spanish"],
+            purpose: "PRACTICE",
+            bio: "Medical student. Want to improve my English for conferences! 🏥",
+            photos: [
+              "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400",
+              "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 31: Pierre - French learning Turkish
+    prisma.user.create({
+      data: {
+        email: "pierre@swiip.com".toLowerCase().trim(),
+        phone: "+905551234597".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 7 * 60 * 1000),
+        referralCode: "PIERR1",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 1,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Pierre",
+            birthYear: 1987,
+            city: "Istanbul",
+            country: "FR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["French"],
+            languagesPractice: ["Turkish", "English"],
+            purpose: "COFFEE",
+            bio: "Wine sommelier exploring Turkish wines. Şerefe! 🍷",
+            photos: [
+              "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400",
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+              "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 32: Ece - Turkish learning German
+    prisma.user.create({
+      data: {
+        email: "ece@swiip.com".toLowerCase().trim(),
+        phone: "+905551234598".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 50 * 60 * 1000),
+        referralCode: "ECE001",
+        dailyLikesUsed: 11,
+        dailyExtraLikesFromAds: 6,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Ece",
+            birthYear: 1996,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Turkish", "English"],
+            languagesPractice: ["German"],
+            purpose: "CONVERSATION",
+            bio: "Architect dreaming of working in Berlin. Ich liebe Architektur! 🏛️",
+            photos: [
+              "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400",
+              "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400",
+              "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 33: Ivan - Bulgarian learning Turkish
+    prisma.user.create({
+      data: {
+        email: "ivan@swiip.com".toLowerCase().trim(),
+        phone: "+905551234599".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 80 * 60 * 1000),
+        referralCode: "IVAN01",
+        dailyLikesUsed: 4,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Ivan",
+            birthYear: 1990,
+            city: "Istanbul",
+            country: "BG",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Bulgarian", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "PRACTICE",
+            bio: "Musician from Sofia. Love Turkish music and want to collaborate!",
+            photos: [
+              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+              "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400",
+              "https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 34: Aylin - Turkish learning Portuguese
+    prisma.user.create({
+      data: {
+        email: "aylin@swiip.com".toLowerCase().trim(),
+        phone: "+905551234600".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 18 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 4 * 60 * 1000),
+        referralCode: "AYLIN1",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 4,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Aylin",
+            birthYear: 1993,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Turkish"],
+            languagesPractice: ["Portuguese", "Spanish"],
+            purpose: "COFFEE",
+            bio: "Marketing manager planning a sabbatical in Brazil. Olá! 🌴",
+            photos: [
+              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
+              "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 35: Okan - Turkish learning Arabic
+    prisma.user.create({
+      data: {
+        email: "okan@swiip.com".toLowerCase().trim(),
+        phone: "+905551234601".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 65 * 60 * 1000),
+        referralCode: "OKAN01",
+        dailyLikesUsed: 6,
+        dailyExtraLikesFromAds: 3,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Okan",
+            birthYear: 1985,
+            city: "Istanbul",
+            country: "TR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Turkish", "English"],
+            languagesPractice: ["Arabic"],
+            purpose: "CONVERSATION",
+            bio: "History professor interested in Middle Eastern studies. مرحبا!",
+            photos: [
+              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+              "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400",
+              "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 36: Hana - Korean learning Turkish
+    prisma.user.create({
+      data: {
+        email: "hana@swiip.com".toLowerCase().trim(),
+        phone: "+905551234602".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 18 * 60 * 1000),
+        referralCode: "HANA01",
+        dailyLikesUsed: 8,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Hana",
+            birthYear: 1999,
+            city: "Istanbul",
+            country: "KR",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Korean", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "PRACTICE",
+            bio: "Korean exchange student at Boğaziçi University. Merhaba! 안녕!",
+            photos: [
+              "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400",
+              "https://images.unsplash.com/photo-1491349174775-aaafddd81942?w=400",
+              "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 37: Ali - Turkish learning English
+    prisma.user.create({
+      data: {
+        email: "ali@swiip.com".toLowerCase().trim(),
+        phone: "+905551234603".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 95 * 60 * 1000),
+        referralCode: "ALI001",
+        dailyLikesUsed: 13,
+        dailyExtraLikesFromAds: 9,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Ali",
+            birthYear: 1994,
+            city: "Ankara",
+            country: "TR",
+            lat: ANKARA_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ANKARA_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Turkish"],
+            languagesPractice: ["English"],
+            purpose: "PRACTICE",
+            bio: "Civil servant preparing for IELTS. Looking for speaking partners!",
+            photos: [
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+              "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400",
+              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 38: Eva - Swedish learning Turkish
+    prisma.user.create({
+      data: {
+        email: "eva@swiip.com".toLowerCase().trim(),
+        phone: "+905551234604".trim(),
+        isPremium: true,
+        premiumSource: "revenuecat",
+        premiumUpdatedAt: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000),
+        premiumExpiresAt: new Date(now.getTime() + 24 * 24 * 60 * 60 * 1000),
+        lastActiveAt: new Date(now.getTime() - 6 * 60 * 1000),
+        referralCode: "EVA001",
+        dailyLikesUsed: 0,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 2,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Eva",
+            birthYear: 1992,
+            city: "Istanbul",
+            country: "SE",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Swedish", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "COFFEE",
+            bio: "Swedish journalist covering Turkey. Fika anyone? ☕",
+            photos: [
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
+              "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+              "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 39: Emre - Turkish learning Greek
+    prisma.user.create({
+      data: {
+        email: "emre@swiip.com".toLowerCase().trim(),
+        phone: "+905551234605".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 42 * 60 * 1000),
+        referralCode: "EMRE01",
+        dailyLikesUsed: 5,
+        dailyExtraLikesFromAds: 0,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Emre",
+            birthYear: 1988,
+            city: "Izmir",
+            country: "TR",
+            lat: IZMIR_LAT + (Math.random() - 0.5) * 0.1,
+            lng: IZMIR_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "MALE",
+            languagesNative: ["Turkish", "English"],
+            languagesPractice: ["Greek"],
+            purpose: "CONVERSATION",
+            bio: "Aegean tour guide. Love Greek culture and islands! Γεια σου!",
+            photos: [
+              "https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?w=400",
+              "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400",
+              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+            ],
+          },
+        },
+      },
+    }),
+
+    // User 40: Maya - Indian learning Turkish
+    prisma.user.create({
+      data: {
+        email: "maya@swiip.com".toLowerCase().trim(),
+        phone: "+905551234606".trim(),
+        isPremium: false,
+        lastActiveAt: new Date(now.getTime() - 22 * 60 * 1000),
+        referralCode: "MAYA01",
+        dailyLikesUsed: 9,
+        dailyExtraLikesFromAds: 3,
+        lastLikeResetAt: now,
+        dailyDirectUsed: 0,
+        lastDirectResetAt: now,
+        profile: {
+          create: {
+            displayName: "Maya",
+            birthYear: 1997,
+            city: "Istanbul",
+            country: "IN",
+            lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+            lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+            gender: "FEMALE",
+            languagesNative: ["Hindi", "English"],
+            languagesPractice: ["Turkish"],
+            purpose: "PRACTICE",
+            bio: "Bollywood dancer teaching in Istanbul. Namaste! 🙏",
+            photos: [
+              "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400",
+              "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
+              "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400",
             ],
           },
         },
@@ -639,6 +1763,169 @@ async function main() {
       status: "DECLINED",
       kind: "LIKE",
     },
+  });
+
+  // Add more likes for comprehensive testing - Every user gets several incoming likes
+  console.log("💕 Adding more likes for testing...");
+
+  // Likes for Alex (users[0])
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[2].id, toUserId: users[0].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Likes for Maria (users[1])
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[3].id, toUserId: users[1].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[7].id, toUserId: users[1].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Likes for John (users[2])
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[5].id, toUserId: users[2].id, status: "PENDING", kind: "LIKE" },
+  });
+  // Note: users[2] -> users[7] already exists as FAVORITE, but LIKE is different, so skip Emma
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[9].id, toUserId: users[2].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Likes for Sophie (users[3])
+  // Note: users[0] -> users[3] already exists (line 515), skip it
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[2].id, toUserId: users[3].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[4].id, toUserId: users[3].id, status: "PENDING", kind: "LIKE" },
+  });
+  // Note: users[3] -> users[8] will be created as FAVORITE below, skip LIKE
+
+  // Likes for David (users[4])
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[1].id, toUserId: users[4].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[5].id, toUserId: users[4].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Likes for Lisa (users[5])
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[0].id, toUserId: users[5].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[3].id, toUserId: users[5].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[4].id, toUserId: users[5].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Likes for Michael (users[6])
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[1].id, toUserId: users[6].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[5].id, toUserId: users[6].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[8].id, toUserId: users[6].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[9].id, toUserId: users[6].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Likes for Emma (users[7])
+  // Note: users[2] -> users[7] already exists as FAVORITE (John -> Emma)
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[0].id, toUserId: users[7].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[3].id, toUserId: users[7].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[4].id, toUserId: users[7].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[6].id, toUserId: users[7].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Likes for Tom (users[8])
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[1].id, toUserId: users[8].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[5].id, toUserId: users[8].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[7].id, toUserId: users[8].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Likes for Sarah (users[9])
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[2].id, toUserId: users[9].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[3].id, toUserId: users[9].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[4].id, toUserId: users[9].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[6].id, toUserId: users[9].id, status: "PENDING", kind: "LIKE" },
+  });
+  await prisma.conversationRequest.create({
+    data: { fromUserId: users[8].id, toUserId: users[9].id, status: "PENDING", kind: "LIKE" },
+  });
+
+  // Add some FAVORITE requests (direct messages) for testing
+  // Sophie sends FAVORITE to Tom
+  const sophieFavoritesTom = await prisma.conversationRequest.create({
+    data: { fromUserId: users[3].id, toUserId: users[8].id, status: "PENDING", kind: "FAVORITE" },
+  });
+  const sophieTomMessage = await prisma.message.create({
+    data: {
+      senderUserId: users[3].id,
+      text: "Hi Tom! I saw you're new to Istanbul. Would you like to meet for coffee and practice languages together?",
+      isRequestMessage: true,
+      requestId: sophieFavoritesTom.id,
+    },
+  });
+  await prisma.conversationRequest.update({
+    where: { id: sophieFavoritesTom.id },
+    data: { firstMessageId: sophieTomMessage.id },
+  });
+
+  // Maria sends FAVORITE to Sophie
+  const mariaFavoritesSophie = await prisma.conversationRequest.create({
+    data: { fromUserId: users[1].id, toUserId: users[3].id, status: "PENDING", kind: "FAVORITE" },
+  });
+  const mariaSophieMessage = await prisma.message.create({
+    data: {
+      senderUserId: users[1].id,
+      text: "Merhaba Sophie! French ve Turkish practice yapmak ister misin? Ben İstanbul'dayım, bir gün buluşabiliriz!",
+      isRequestMessage: true,
+      requestId: mariaFavoritesSophie.id,
+    },
+  });
+  await prisma.conversationRequest.update({
+    where: { id: mariaFavoritesSophie.id },
+    data: { firstMessageId: mariaSophieMessage.id },
+  });
+
+  // Sarah sends FAVORITE to David
+  const sarahFavoritesDavid = await prisma.conversationRequest.create({
+    data: { fromUserId: users[9].id, toUserId: users[4].id, status: "PENDING", kind: "FAVORITE" },
+  });
+  const sarahDavidMessage = await prisma.message.create({
+    data: {
+      senderUserId: users[9].id,
+      text: "Hey David! I'm looking for someone to practice Turkish with. Would you be interested in a language exchange?",
+      isRequestMessage: true,
+      requestId: sarahFavoritesDavid.id,
+    },
+  });
+  await prisma.conversationRequest.update({
+    where: { id: sarahFavoritesDavid.id },
+    data: { firstMessageId: sarahDavidMessage.id },
   });
 
   console.log("✅ Created conversation requests");

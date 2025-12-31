@@ -229,9 +229,9 @@ router.post("/accept", authMiddleware, async (req, res, next) => {
     let matchId: string | undefined;
     let conversationId: string | undefined;
 
-    // If both users liked each other (kind=LIKE), create Match
+    // If accepting a LIKE request, it means both users like each other - create Match immediately
     if (request.kind === "LIKE") {
-      // Check if I also sent a LIKE request to them
+      // Check if I already sent a LIKE request to them
       const myRequest = await (prisma as any).conversationRequest.findUnique({
         where: {
           fromUserId_toUserId: {
@@ -241,61 +241,77 @@ router.post("/accept", authMiddleware, async (req, res, next) => {
         },
       });
 
-      if (myRequest && myRequest.kind === "LIKE") {
-        // Both liked - create Match
-        const [userAId, userBId] = getCanonicalPair(req.user.id, body.fromUserId);
-
-        const match = await (prisma as any).match.upsert({
+      // If I haven't sent a LIKE request yet, create one automatically
+      // Accepting their LIKE = I also like them
+      if (!myRequest || myRequest.kind !== "LIKE") {
+        await (prisma as any).conversationRequest.upsert({
           where: {
-            userAId_userBId: {
-              userAId,
-              userBId,
+            fromUserId_toUserId: {
+              fromUserId: req.user.id,
+              toUserId: body.fromUserId,
             },
           },
           create: {
+            fromUserId: req.user.id,
+            toUserId: body.fromUserId,
+            status: "ACCEPTED",
+            kind: "LIKE",
+          },
+          update: {
+            status: "ACCEPTED",
+            kind: "LIKE",
+          },
+        });
+      } else if (myRequest.status === "PENDING") {
+        // If I already sent a LIKE request but it's still PENDING, mark it as ACCEPTED
+        await (prisma as any).conversationRequest.update({
+          where: { id: myRequest.id },
+          data: { status: "ACCEPTED" },
+        });
+      }
+
+      // Create Match (both users like each other now)
+      const [userAId, userBId] = getCanonicalPair(req.user.id, body.fromUserId);
+
+      const match = await (prisma as any).match.upsert({
+        where: {
+          userAId_userBId: {
             userAId,
             userBId,
           },
-          update: {},
-        });
+        },
+        create: {
+          userAId,
+          userBId,
+        },
+        update: {},
+      });
 
-        matchId = match.id;
+      matchId = match.id;
 
-        // Create conversation linked to match
-        const conversation = await (prisma as any).conversation.upsert({
-          where: {
-            matchId: match.id,
-          },
-          create: {
-            matchId: match.id,
-          },
-          update: {},
-        });
+      // Create conversation linked to match
+      const conversation = await (prisma as any).conversation.upsert({
+        where: {
+          matchId: match.id,
+        },
+        create: {
+          matchId: match.id,
+        },
+        update: {},
+      });
 
-        conversationId = conversation.id;
+      conversationId = conversation.id;
 
-        // Update my request status to ACCEPTED as well
-        if (myRequest.status === "PENDING") {
-          await (prisma as any).conversationRequest.update({
-            where: { id: myRequest.id },
-            data: { status: "ACCEPTED" },
-          });
-        }
+      // Notify both users
+      const otherUserProfile = request.fromUser.profile;
+      const currentUserProfile = await prisma.profile.findUnique({
+        where: { userId: req.user.id },
+        select: { displayName: true },
+      });
 
-        // Notify both users
-        const otherUserProfile = request.fromUser.profile;
-        const currentUserProfile = await prisma.profile.findUnique({
-          where: { userId: req.user.id },
-          select: { displayName: true },
-        });
-
-        if (otherUserProfile && currentUserProfile) {
-          await notifyNewMatch(body.fromUserId, currentUserProfile.displayName);
-          await notifyNewMatch(req.user.id, otherUserProfile.displayName);
-        }
-      } else {
-        // I haven't liked them back yet - just accept their request
-        // No match/conversation created yet
+      if (otherUserProfile && currentUserProfile) {
+        await notifyNewMatch(body.fromUserId, currentUserProfile.displayName);
+        await notifyNewMatch(req.user.id, otherUserProfile.displayName);
       }
     } else if (request.kind === "FAVORITE") {
       // For FAVORITE, create conversation directly (no match needed)

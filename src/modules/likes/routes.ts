@@ -24,10 +24,12 @@ router.get("/incoming/count", authMiddleware, async (req, res, next) => {
     }
 
     // Get users who liked me (excluding already matched and blocked)
-    const incomingLikes = await (prisma as any).swipe.findMany({
+    // Use ConversationRequest instead of old Swipe model
+    const incomingLikes = await (prisma as any).conversationRequest.findMany({
       where: {
         toUserId: userId,
-        type: "LIKE",
+        kind: "LIKE",
+        status: "PENDING", // Only show pending likes (not accepted/declined)
       },
       select: { fromUserId: true },
     });
@@ -111,10 +113,12 @@ router.get("/incoming", authMiddleware, async (req, res, next) => {
     }
 
     // Get users who liked me (excluding already matched and blocked)
-    const incomingLikes = await (prisma as any).swipe.findMany({
+    // Use ConversationRequest instead of old Swipe model
+    const incomingLikes = await (prisma as any).conversationRequest.findMany({
       where: {
         toUserId: userId,
-        type: "LIKE",
+        kind: "LIKE",
+        status: "PENDING", // Only show pending likes (not accepted/declined)
       },
       include: {
         fromUser: {

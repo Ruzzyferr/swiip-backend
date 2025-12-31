@@ -186,6 +186,7 @@ model Message {
   conversationId   String?
   senderUserId     String
   text             String   @db.VarChar(2000)
+  audioUrl         String?
   isRequestMessage Boolean  @default(false)
   requestId        String?
   createdAt        DateTime @default(now())

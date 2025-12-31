@@ -2,6 +2,7 @@ import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "path";
 import healthRoutes from "./routes/health.js";
 import v1Routes from "./routes/v1/index.js";
 import { requestIdMiddleware } from "./middleware/requestId.js";
@@ -18,6 +19,10 @@ export function createApp(): Express {
 
   // Body parsing
   app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  
+  // Serve uploaded files
+  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
   // Request ID middleware (must be early)
   app.use(requestIdMiddleware);

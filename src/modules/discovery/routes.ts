@@ -106,10 +106,13 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
     const swipedUserIds = new Set(mySwipes.map((s: { toUserId: string }) => s.toUserId));
 
     // Get users with ConversationRequests
-    // PENDING and ACCEPTED: always exclude
-    // DECLINED: exclude only if declined within last 2 weeks
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    // For outgoing requests: PENDING and ACCEPTED always exclude, DECLINED exclude for 1 week
+    // For incoming requests: 
+    //   - PENDING: exclude only if created within 1 week (when someone liked me, hide them for 1 week)
+    //   - ACCEPTED: always exclude (matched users)
+    //   - DECLINED: exclude only if declined within 1 week (when I declined someone, hide them for 1 week)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
     const outgoingRequests = await (prisma as any).conversationRequest.findMany({
       where: {
@@ -119,7 +122,7 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
           { status: "ACCEPTED" },
           {
             status: "DECLINED",
-            updatedAt: { gte: twoWeeksAgo },
+            updatedAt: { gte: oneWeekAgo },
           },
         ],
       },
@@ -129,11 +132,16 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       where: {
         toUserId: req.user.id,
         OR: [
-          { status: "PENDING" },
+          // PENDING: only exclude if created within 1 week (they liked me, hide them for 1 week)
+          {
+            status: "PENDING",
+            createdAt: { gte: oneWeekAgo },
+          },
           { status: "ACCEPTED" },
+          // DECLINED: only exclude if declined within 1 week (I declined them, hide them for 1 week)
           {
             status: "DECLINED",
-            updatedAt: { gte: twoWeeksAgo },
+            updatedAt: { gte: oneWeekAgo },
           },
         ],
       },

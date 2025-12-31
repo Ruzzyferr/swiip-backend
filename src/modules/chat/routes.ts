@@ -1,10 +1,14 @@
 import { Router } from "express";
 import { z } from "zod";
+import multer from "multer";
 import { prisma } from "../../lib/prisma.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, NotFoundError, ForbiddenError, PaymentRequiredError } from "../../lib/httpErrors.js";
 import { incrementMSG } from "../../lib/usage.js";
 import { notifyNewMessage } from "../../lib/notify.js";
+import { v4 as uuidv4 } from "uuid";
+import path from "path";
+import fs from "fs/promises";
 
 const router = Router();
 
@@ -18,11 +22,12 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
       throw new BadRequestError("User not found");
     }
 
+    const userId = req.user.id;
+
     // Get all matches where user is either userA or userB
-    // Note: If you get "Cannot read properties of undefined", run: pnpm prisma:generate
     const matches = await (prisma as any).match.findMany({
       where: {
-        OR: [{ userAId: req.user.id }, { userBId: req.user.id }],
+        OR: [{ userAId: userId }, { userBId: userId }],
       },
       include: {
         userA: {
@@ -38,6 +43,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
         conversation: {
           select: {
             id: true,
+            createdAt: true,
           },
         },
       },
@@ -46,31 +52,96 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
       },
     });
 
-    // Format response (same as matches list)
-    const userId = req.user.id;
-    const conversations = matches.map((match: any) => {
-      const otherUser =
-        match.userAId === userId ? match.userB : match.userA;
-      const otherProfile = otherUser.profile;
+    // Get all conversations from FAVORITE requests where user is either sender or receiver
+    const favoriteConversations = await (prisma as any).conversation.findMany({
+      where: {
+        requestId: {
+          not: null,
+        },
+        request: {
+          OR: [
+            { fromUserId: userId },
+            { toUserId: userId },
+          ],
+          status: "ACCEPTED",
+        },
+      },
+      include: {
+        request: {
+          include: {
+            fromUser: {
+              include: {
+                profile: true,
+              },
+            },
+            toUser: {
+              include: {
+                profile: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Format match-based conversations
+    const matchConversations = matches
+      .filter((match: any) => match.conversation) // Only include matches with conversations
+      .map((match: any) => {
+        const otherUser =
+          match.userAId === userId ? match.userB : match.userA;
+        const otherProfile = otherUser.profile;
+
+        if (!otherProfile) {
+          return null;
+        }
+
+        return {
+          conversationId: match.conversation.id,
+          matchId: match.id,
+          otherUser: {
+            userId: otherUser.id,
+            displayName: otherProfile.displayName,
+            photos: otherProfile.photos,
+            city: otherProfile.city,
+          },
+          createdAt: match.conversation.createdAt.toISOString(),
+        };
+      })
+      .filter((c: any) => c !== null);
+
+    // Format request-based conversations (FAVORITE)
+    const requestConversations = favoriteConversations.map((conv: any) => {
+      const request = conv.request;
+      const otherUser = request.fromUserId === userId ? request.toUser : request.fromUser;
+      const otherProfile = otherUser?.profile;
 
       if (!otherProfile) {
         return null;
       }
 
       return {
-        conversationId: match.conversation?.id || null,
-        matchId: match.id,
+        conversationId: conv.id,
+        matchId: null,
         otherUser: {
           userId: otherUser.id,
           displayName: otherProfile.displayName,
           photos: otherProfile.photos,
           city: otherProfile.city,
         },
-        createdAt: match.createdAt.toISOString(),
+        createdAt: conv.createdAt.toISOString(),
       };
     }).filter((c: any) => c !== null);
 
-    res.json(conversations);
+    // Combine and sort by createdAt
+    const allConversations = [...matchConversations, ...requestConversations].sort(
+      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    res.json(allConversations);
   } catch (error) {
     next(error);
   }
@@ -83,8 +154,9 @@ router.get("/conversations/:conversationId", authMiddleware, async (req, res, ne
     }
 
     const conversationId = req.params.conversationId;
+    const userId = req.user.id;
 
-    // Get conversation with match and user details
+    // Get conversation with match and request details
     const conversation = await (prisma as any).conversation.findUnique({
       where: { id: conversationId },
       include: {
@@ -102,6 +174,21 @@ router.get("/conversations/:conversationId", authMiddleware, async (req, res, ne
             },
           },
         },
+        request: {
+          include: {
+            fromUser: {
+              include: {
+                profile: true,
+              },
+            },
+            toUser: {
+              include: {
+                profile: true,
+              },
+            },
+            firstMessage: true,
+          },
+        },
       },
     });
 
@@ -109,21 +196,50 @@ router.get("/conversations/:conversationId", authMiddleware, async (req, res, ne
       throw new NotFoundError("Conversation not found");
     }
 
-    // Check if user is part of this match
-    const userId = req.user.id;
-    if (
-      conversation.match.userAId !== userId &&
-      conversation.match.userBId !== userId
-    ) {
-      throw new ForbiddenError("Access denied to this conversation");
+    let otherUser: any;
+    let otherProfile: any;
+    let matchId: string | null = null;
+
+    // Handle conversation from MATCH (LIKE requests)
+    if (conversation.match) {
+      // Check if user is part of this match
+      if (
+        conversation.match.userAId !== userId &&
+        conversation.match.userBId !== userId
+      ) {
+        throw new ForbiddenError("Access denied to this conversation");
+      }
+
+      // Get other user from match
+      otherUser =
+        conversation.match.userAId === userId
+          ? conversation.match.userB
+          : conversation.match.userA;
+      otherProfile = otherUser.profile;
+      matchId = conversation.match.id;
+    }
+    // Handle conversation from REQUEST (FAVORITE requests)
+    else if (conversation.request) {
+      const request = conversation.request;
+      
+      // Check if user is part of this request (either sender or receiver)
+      if (request.fromUserId !== userId && request.toUserId !== userId) {
+        throw new ForbiddenError("Access denied to this conversation");
+      }
+
+      // Get other user from request
+      otherUser = request.fromUserId === userId ? request.toUser : request.fromUser;
+      otherProfile = otherUser?.profile;
+    } else {
+      throw new NotFoundError("Conversation has no associated match or request");
+    }
+
+    if (!otherProfile) {
+      throw new NotFoundError("Other user profile not found");
     }
 
     // Check if blocked (either way)
-    const otherUserId =
-      conversation.match.userAId === userId
-        ? conversation.match.userBId
-        : conversation.match.userAId;
-
+    const otherUserId = otherUser.id;
     const blockExists = await (prisma as any).block.findFirst({
       where: {
         OR: [
@@ -143,26 +259,40 @@ router.get("/conversations/:conversationId", authMiddleware, async (req, res, ne
       });
     }
 
-    // Get other user
-    const otherUser =
-      conversation.match.userAId === userId
-        ? conversation.match.userB
-        : conversation.match.userA;
-    const otherProfile = otherUser.profile;
-
-    if (!otherProfile) {
-      throw new NotFoundError("Other user profile not found");
+    // Get firstMessage if this is a FAVORITE request conversation
+    let firstMessage = null;
+    if (conversation.request && conversation.request.firstMessage) {
+      firstMessage = {
+        id: conversation.request.firstMessage.id,
+        text: conversation.request.firstMessage.text,
+        createdAt: conversation.request.firstMessage.createdAt.toISOString(),
+      };
     }
+
+    // Get current user's profile for gender check
+    const currentUserProfile = await prisma.profile.findUnique({
+      where: { userId },
+      select: { gender: true },
+    });
+
+    // Check if there are any messages in this conversation
+    const messageCount = await (prisma as any).message.count({
+      where: { conversationId: conversation.id },
+    });
 
     res.json({
       conversationId: conversation.id,
-      matchId: conversation.match.id,
+      matchId,
       otherUser: {
         userId: otherUser.id,
         displayName: otherProfile.displayName,
         photos: otherProfile.photos,
         city: otherProfile.city,
+        gender: otherProfile.gender,
       },
+      currentUserGender: currentUserProfile?.gender || null,
+      firstMessage,
+      hasMessages: messageCount > 0,
       createdAt: conversation.createdAt.toISOString(),
     });
   } catch (error) {
@@ -178,6 +308,7 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
 
     const conversationId = req.params.conversationId;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const userId = req.user.id;
 
     // Verify user has access to this conversation
     const conversation = await (prisma as any).conversation.findUnique({
@@ -189,6 +320,12 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
             userBId: true,
           },
         },
+        request: {
+          select: {
+            fromUserId: true,
+            toUserId: true,
+          },
+        },
       },
     });
 
@@ -196,18 +333,30 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
       throw new NotFoundError("Conversation not found");
     }
 
-    // Check if user is part of this match
-    const userId = req.user.id;
-    const otherUserId =
-      conversation.match.userAId === userId
-        ? conversation.match.userBId
-        : conversation.match.userAId;
-
-    if (
-      conversation.match.userAId !== userId &&
-      conversation.match.userBId !== userId
-    ) {
-      throw new ForbiddenError("Access denied to this conversation");
+    // Check if user is part of this conversation (either via match or request)
+    let otherUserId: string;
+    
+    if (conversation.match) {
+      // Conversation from MATCH (LIKE requests)
+      if (
+        conversation.match.userAId !== userId &&
+        conversation.match.userBId !== userId
+      ) {
+        throw new ForbiddenError("Access denied to this conversation");
+      }
+      otherUserId =
+        conversation.match.userAId === userId
+          ? conversation.match.userBId
+          : conversation.match.userAId;
+    } else if (conversation.request) {
+      // Conversation from REQUEST (FAVORITE requests)
+      const request = conversation.request;
+      if (request.fromUserId !== userId && request.toUserId !== userId) {
+        throw new ForbiddenError("Access denied to this conversation");
+      }
+      otherUserId = request.fromUserId === userId ? request.toUserId : request.fromUserId;
+    } else {
+      throw new NotFoundError("Conversation has no associated match or request");
     }
 
     // Check if blocked (either way)
@@ -246,6 +395,7 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
         conversationId: msg.conversationId,
         senderUserId: msg.senderUserId,
         text: msg.text,
+        audioUrl: msg.audioUrl || null,
         createdAt: msg.createdAt.toISOString(),
       }))
     );
@@ -283,6 +433,12 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
             userBId: true,
           },
         },
+        request: {
+          select: {
+            fromUserId: true,
+            toUserId: true,
+          },
+        },
         messages: {
           select: {
             id: true,
@@ -296,18 +452,31 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
       throw new NotFoundError("Conversation not found");
     }
 
-    // Check if user is part of this match
+    // Check if user is part of this conversation (either via match or request)
     const userId = req.user.id;
-    const otherUserId =
-      conversation.match.userAId === userId
-        ? conversation.match.userBId
-        : conversation.match.userAId;
-
-    if (
-      conversation.match.userAId !== userId &&
-      conversation.match.userBId !== userId
-    ) {
-      throw new ForbiddenError("Access denied to this conversation");
+    let otherUserId: string;
+    
+    if (conversation.match) {
+      // Conversation from MATCH (LIKE requests)
+      if (
+        conversation.match.userAId !== userId &&
+        conversation.match.userBId !== userId
+      ) {
+        throw new ForbiddenError("Access denied to this conversation");
+      }
+      otherUserId =
+        conversation.match.userAId === userId
+          ? conversation.match.userBId
+          : conversation.match.userAId;
+    } else if (conversation.request) {
+      // Conversation from REQUEST (FAVORITE requests)
+      const request = conversation.request;
+      if (request.fromUserId !== userId && request.toUserId !== userId) {
+        throw new ForbiddenError("Access denied to this conversation");
+      }
+      otherUserId = request.fromUserId === userId ? request.toUserId : request.fromUserId;
+    } else {
+      throw new NotFoundError("Conversation has no associated match or request");
     }
 
     // Check if blocked (either way)
@@ -427,6 +596,199 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
     }
   }
 });
+
+// Configure multer for audio uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: async (req, file, cb) => {
+      const uploadDir = path.join(process.cwd(), "uploads", "audio");
+      try {
+        await fs.mkdir(uploadDir, { recursive: true });
+        cb(null, uploadDir);
+      } catch (error) {
+        cb(error as Error, uploadDir);
+      }
+    },
+    filename: (req, file, cb) => {
+      const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+      cb(null, uniqueName);
+    },
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("audio/")) {
+      cb(null, true);
+    } else {
+      cb(new BadRequestError("Only audio files are allowed"));
+    }
+  },
+});
+
+/**
+ * POST /api/v1/chat/conversations/:conversationId/messages/audio
+ * Send an audio message
+ */
+router.post(
+  "/conversations/:conversationId/messages/audio",
+  authMiddleware,
+  upload.single("audio"),
+  async (req, res, next) => {
+    try {
+      if (!req.user) {
+        throw new BadRequestError("User not found");
+      }
+
+      if (!req.file) {
+        throw new BadRequestError("Audio file is required");
+      }
+
+      const conversationId = req.params.conversationId;
+      const userId = req.user.id;
+
+      // Get user to check premium status
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { isPremium: true },
+      });
+
+      if (!user) {
+        throw new BadRequestError("User not found");
+      }
+
+      // Verify user has access to this conversation
+      const conversation = await (prisma as any).conversation.findUnique({
+        where: { id: conversationId },
+        include: {
+          match: {
+            select: {
+              userAId: true,
+              userBId: true,
+            },
+          },
+          request: {
+            select: {
+              fromUserId: true,
+              toUserId: true,
+            },
+          },
+        },
+      });
+
+      if (!conversation) {
+        throw new NotFoundError("Conversation not found");
+      }
+
+      // Check if user is part of this conversation
+      let otherUserId: string;
+
+      if (conversation.match) {
+        if (
+          conversation.match.userAId !== userId &&
+          conversation.match.userBId !== userId
+        ) {
+          throw new ForbiddenError("Access denied to this conversation");
+        }
+        otherUserId =
+          conversation.match.userAId === userId
+            ? conversation.match.userBId
+            : conversation.match.userAId;
+      } else if (conversation.request) {
+        const request = conversation.request;
+        if (request.fromUserId !== userId && request.toUserId !== userId) {
+          throw new ForbiddenError("Access denied to this conversation");
+        }
+        otherUserId = request.fromUserId === userId ? request.toUserId : request.fromUserId;
+      } else {
+        throw new NotFoundError("Conversation has no associated match or request");
+      }
+
+      // Check if blocked
+      const blockExists = await (prisma as any).block.findFirst({
+        where: {
+          OR: [
+            { blockerUserId: userId, blockedUserId: otherUserId },
+            { blockerUserId: otherUserId, blockedUserId: userId },
+          ],
+        },
+      });
+
+      if (blockExists) {
+        return res.status(403).json({
+          error: {
+            code: "BLOCKED",
+            message: "This conversation is blocked",
+            requestId: req.id || "unknown",
+          },
+        });
+      }
+
+      // Check and increment message usage limit
+      const usage = await incrementMSG(userId, user.isPremium);
+      if (!usage.canSend) {
+        return res.status(429).json({
+          error: {
+            code: "MSG_LIMIT_REACHED",
+            message: "Daily message limit reached. Upgrade to Premium for unlimited messages.",
+            requestId: req.id || "unknown",
+            details: {
+              msgCount: usage.msgCount,
+              msgLimit: usage.msgLimit,
+              isPremium: user.isPremium,
+            },
+          },
+        });
+      }
+
+      // Create audio URL (in production, upload to S3 or similar)
+      const audioUrl = `/uploads/audio/${req.file.filename}`;
+
+      // Create message with audio
+      const message = await (prisma as any).message.create({
+        data: {
+          conversationId,
+          senderUserId: userId,
+          text: "", // Empty text for audio messages
+          audioUrl,
+        },
+      });
+
+      // Notify other user
+      const senderProfile = await prisma.profile.findUnique({
+        where: { userId },
+        select: { displayName: true },
+      });
+
+      if (senderProfile) {
+        await notifyNewMessage(otherUserId, senderProfile.displayName);
+      }
+
+      res.json({
+        id: message.id,
+        conversationId: message.conversationId,
+        senderUserId: message.senderUserId,
+        text: message.text,
+        audioUrl: message.audioUrl,
+        createdAt: message.createdAt.toISOString(),
+      });
+    } catch (error) {
+      // Clean up uploaded file on error
+      if (req.file) {
+        try {
+          await fs.unlink(req.file.path);
+        } catch (unlinkError) {
+          console.error("Failed to delete uploaded file:", unlinkError);
+        }
+      }
+      if (error instanceof z.ZodError) {
+        next(new BadRequestError(error.issues[0]?.message || "Validation error"));
+      } else {
+        next(error);
+      }
+    }
+  }
+);
 
 /**
  * GET /api/v1/chat/requests
@@ -638,6 +1000,62 @@ router.post("/requests/:requestId/reply", authMiddleware, async (req, res, next)
     } else {
       next(error);
     }
+  }
+});
+
+// Delete conversation (leave conversation for both users)
+router.delete("/conversations/:conversationId", authMiddleware, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new BadRequestError("User not found");
+    }
+
+    const conversationId = req.params.conversationId;
+    const userId = req.user.id;
+
+    // Get conversation with match and request details to verify access
+    const conversation = await (prisma as any).conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        match: {
+          select: {
+            userAId: true,
+            userBId: true,
+          },
+        },
+        request: {
+          select: {
+            fromUserId: true,
+            toUserId: true,
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundError("Conversation not found");
+    }
+
+    // Verify user has access to this conversation
+    let hasAccess = false;
+    if (conversation.match) {
+      hasAccess = conversation.match.userAId === userId || conversation.match.userBId === userId;
+    } else if (conversation.request) {
+      hasAccess = conversation.request.fromUserId === userId || conversation.request.toUserId === userId;
+    }
+
+    if (!hasAccess) {
+      throw new ForbiddenError("Access denied to this conversation");
+    }
+
+    // Delete the conversation (this will cascade delete messages)
+    await (prisma as any).conversation.delete({
+      where: { id: conversationId },
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
   }
 });
 
