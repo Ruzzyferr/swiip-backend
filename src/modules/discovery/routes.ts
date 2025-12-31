@@ -37,17 +37,50 @@ async function ensureProfileExists(userId: string): Promise<void> {
   }
 }
 
+// Helper to parse array from query string (handles both string and array input)
+const parseStringArray = (val: unknown): string[] => {
+  if (val === undefined || val === null) return [];
+  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === "string");
+  if (typeof val === "string") return val.split(",").map(s => s.trim()).filter(Boolean);
+  return [];
+};
+
+// Helper to parse tuple from query string
+const parseTuple = (val: unknown): [number, number] | undefined => {
+  if (val === undefined || val === null) return undefined;
+  if (Array.isArray(val) && val.length === 2) {
+    return [Number(val[0]), Number(val[1])];
+  }
+  if (typeof val === "string") {
+    const parts = val.split(",").map(s => Number(s.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      return [parts[0], parts[1]];
+    }
+  }
+  return undefined;
+};
+
 // Filter query schema
 const feedQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(50).optional(),
   maxDistanceKm: z.coerce.number().positive().nullable().optional(),
-  languages: z.string().array().optional(),
+  // New filters
+  ageRange: z.preprocess(parseTuple, z.tuple([z.number().int().min(18), z.number().int().max(100)]).optional()),
+  gender: z.enum(["ALL", "FEMALE", "MALE"]).optional(),
+  nativeLanguages: z.preprocess(parseStringArray, z.string().array()),
+  targetLanguages: z.preprocess(parseStringArray, z.string().array()),
+  countries: z.preprocess(parseStringArray, z.string().array()),
+  // Existing filters
+  languages: z.preprocess(parseStringArray, z.string().array()),
   purpose: z.enum(["CONVERSATION", "PRACTICE", "COFFEE"]).optional(),
   culturalPreference: z.enum(["LOCAL", "EUROPE", "INTERNATIONAL"]).optional(),
-  excludeCountries: z.string().array().optional(),
+  excludeCountries: z.preprocess(parseStringArray, z.string().array()),
+  // Premium filters
   verifiedOnly: z.coerce.boolean().optional(),
   recentlyActive: z.coerce.boolean().optional(),
   minPhotos: z.coerce.number().int().nonnegative().optional(),
+  // Force reshuffle when filters change
+  forceReshuffle: z.coerce.boolean().optional(),
 });
 
 router.get("/feed", authMiddleware, async (req, res, next) => {
@@ -58,9 +91,38 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
 
     await ensureProfileExists(req.user.id);
 
+    // Normalize query params - convert bracket notation keys (nativeLanguages[]) to regular keys
+    const normalizedQuery: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(req.query)) {
+      // Remove trailing [] from keys
+      const normalizedKey = key.replace(/\[\]$/, "");
+      // If key already exists, make it an array
+      if (normalizedQuery[normalizedKey] !== undefined) {
+        const existing = normalizedQuery[normalizedKey];
+        if (Array.isArray(existing)) {
+          normalizedQuery[normalizedKey] = [...existing, value];
+        } else {
+          normalizedQuery[normalizedKey] = [existing, value];
+        }
+      } else {
+        normalizedQuery[normalizedKey] = value;
+      }
+    }
+
     // Parse and validate query params
-    const queryParams = feedQuerySchema.parse(req.query);
+    const queryParams = feedQuerySchema.parse(normalizedQuery);
     const limit = Math.min(queryParams.limit || 20, 50);
+
+    // Debug: log raw query and parsed filters
+    console.log("[Feed] Raw query:", req.query);
+    console.log("[Feed] Normalized query:", normalizedQuery);
+    console.log("[Feed] Parsed filters:", {
+      nativeLanguages: queryParams.nativeLanguages,
+      targetLanguages: queryParams.targetLanguages,
+      countries: queryParams.countries,
+      gender: queryParams.gender,
+      ageRange: queryParams.ageRange,
+    });
 
     // Get current user with profile
     const currentUser = await prisma.user.findUnique({
@@ -72,11 +134,11 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       throw new ConflictError("Profile required");
     }
 
-    // Check if we need to shuffle (12-hour cache)
+    // Check if we need to shuffle (12-hour cache OR forceReshuffle)
     const now = new Date();
     const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
-    const needsShuffle = !currentUser.lastFeedShuffleAt || currentUser.lastFeedShuffleAt < twelveHoursAgo;
-    
+    const needsShuffle = queryParams.forceReshuffle || !currentUser.lastFeedShuffleAt || currentUser.lastFeedShuffleAt < twelveHoursAgo;
+
     // If shuffle needed, update timestamp
     if (needsShuffle) {
       await prisma.user.update({
@@ -97,7 +159,7 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
 
     // Get users I've already swiped on (PASS only - LIKE/FAVORITE are now ConversationRequests)
     const mySwipes = await (prisma as any).swipe.findMany({
-      where: { 
+      where: {
         fromUserId: req.user.id,
         type: "PASS",
       },
@@ -113,7 +175,7 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
     //   - DECLINED: exclude only if declined within 1 week (when I declined someone, hide them for 1 week)
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    
+
     const outgoingRequests = await (prisma as any).conversationRequest.findMany({
       where: {
         fromUserId: req.user.id,
@@ -244,7 +306,50 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       (p) => !swipedUserIds.has(p.userId)
     );
 
-    // Apply language filter (FREE, in-memory) - matches if user speaks OR practices any of the languages
+    // Apply gender filter (FREE, in-memory)
+    if (queryParams.gender && queryParams.gender !== "ALL") {
+      availableProfiles = availableProfiles.filter((profile) => {
+        return profile.gender === queryParams.gender;
+      });
+    }
+
+    // Apply age range filter (FREE, in-memory)
+    if (queryParams.ageRange) {
+      const currentYear = new Date().getFullYear();
+      const [minAge, maxAge] = queryParams.ageRange;
+      availableProfiles = availableProfiles.filter((profile) => {
+        if (!profile.birthYear) return false;
+        const age = currentYear - profile.birthYear;
+        return age >= minAge && age <= maxAge;
+      });
+    }
+
+    // Apply native language filter (FREE, in-memory)
+    if (queryParams.nativeLanguages && queryParams.nativeLanguages.length > 0) {
+      availableProfiles = availableProfiles.filter((profile) => {
+        return queryParams.nativeLanguages!.some((lang) =>
+          profile.languagesNative.includes(lang)
+        );
+      });
+    }
+
+    // Apply target/practice language filter (FREE, in-memory)
+    if (queryParams.targetLanguages && queryParams.targetLanguages.length > 0) {
+      availableProfiles = availableProfiles.filter((profile) => {
+        return queryParams.targetLanguages!.some((lang) =>
+          profile.languagesPractice.includes(lang)
+        );
+      });
+    }
+
+    // Apply country filter (FREE, in-memory)
+    if (queryParams.countries && queryParams.countries.length > 0) {
+      availableProfiles = availableProfiles.filter((profile) => {
+        return profile.country && queryParams.countries!.includes(profile.country);
+      });
+    }
+
+    // Apply language filter (legacy, in-memory) - matches if user speaks OR practices any of the languages
     if (queryParams.languages && queryParams.languages.length > 0) {
       availableProfiles = availableProfiles.filter((profile) => {
         const hasNativeMatch = queryParams.languages!.some((lang) =>
@@ -266,11 +371,13 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
 
     // Apply distance filter (FREE, only if maxDistanceKm is provided)
     if (queryParams.maxDistanceKm !== null && queryParams.maxDistanceKm !== undefined && currentProfile.lat && currentProfile.lng) {
+      const userLat = currentProfile.lat;
+      const userLng = currentProfile.lng;
       availableProfiles = availableProfiles.filter((profile) => {
         if (!profile.lat || !profile.lng) return false;
         const distance = calculateDistanceKm(
-          currentProfile.lat,
-          currentProfile.lng,
+          userLat,
+          userLng,
           profile.lat,
           profile.lng
         );
@@ -321,7 +428,7 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
           profile.lat,
           profile.lng
         );
-        
+
         // Distance bonus (if maxDistanceKm is set, closer = better)
         if (queryParams.maxDistanceKm !== null && queryParams.maxDistanceKm !== undefined) {
           // Closer profiles get a small bonus (inverse distance, max 20 points)
@@ -360,14 +467,14 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
       // Round to 12-hour periods so same period = same shuffle
       const twelveHourPeriod = Math.floor(now.getTime() / (12 * 60 * 60 * 1000));
       const shuffleSeed = twelveHourPeriod;
-      
+
       // Simple seeded random function (linear congruential generator)
       let seed = shuffleSeed;
       const seededRandom = () => {
         seed = (seed * 9301 + 49297) % 233280;
         return seed / 233280;
       };
-      
+
       // Fisher-Yates shuffle with seeded random
       for (let i = scoredProfiles.length - 1; i > 0; i--) {
         const j = Math.floor(seededRandom() * (i + 1));
