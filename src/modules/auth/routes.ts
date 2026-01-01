@@ -19,11 +19,11 @@ const registerLoginSchema = z.object({
 router.post("/register", async (req, res, next) => {
   try {
     const body = registerLoginSchema.parse(req.body);
-    
+
     // Normalize email and phone (schema already does this, but be explicit)
     const normalizedEmail = body.email ? body.email.toLowerCase().trim() : null;
     const normalizedPhone = body.phone ? body.phone.trim() : null;
-    
+
     // Find or create user
     let user = await prisma.user.findFirst({
       where: {
@@ -88,13 +88,13 @@ router.post("/register", async (req, res, next) => {
 router.post("/login", async (req, res, next) => {
   try {
     const body = registerLoginSchema.parse(req.body);
-    
+
     // Normalize email and phone
     const normalizedEmail = body.email ? body.email.toLowerCase().trim() : null;
     const normalizedPhone = body.phone ? body.phone.trim() : null;
-    
+
     // Find user
-    const user = await prisma.user.findFirst({
+    let user = await prisma.user.findFirst({
       where: {
         OR: [
           normalizedEmail ? { email: normalizedEmail } : {},
@@ -122,19 +122,23 @@ router.post("/login", async (req, res, next) => {
         }
       }
 
-      user = await prisma.user.create({
+      const newUser = await prisma.user.create({
         data: {
           email: normalizedEmail,
           phone: normalizedPhone,
           referralCode,
         },
+        include: {
+          profile: true,
+        },
       });
+      user = newUser;
     }
 
     // Always send verification code
     const codeType = normalizedEmail ? "EMAIL" : "PHONE";
     const code = await createVerificationCode(user.id, codeType);
-    
+
     // Send code (in development, logs to console)
     await sendVerificationCode(normalizedEmail, normalizedPhone, code);
 
@@ -172,10 +176,10 @@ router.post("/logout", authMiddleware, async (req, res, next) => {
 router.post("/send-code", async (req, res, next) => {
   try {
     const body = registerLoginSchema.parse(req.body);
-    
+
     const normalizedEmail = body.email ? body.email.toLowerCase().trim() : null;
     const normalizedPhone = body.phone ? body.phone.trim() : null;
-    
+
     const user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -194,7 +198,7 @@ router.post("/send-code", async (req, res, next) => {
 
     const codeType = normalizedEmail ? "EMAIL" : "PHONE";
     const code = await createVerificationCode(user.id, codeType);
-    
+
     await sendVerificationCode(normalizedEmail, normalizedPhone, code);
 
     res.json({
@@ -221,10 +225,10 @@ router.post("/verify-code", async (req, res, next) => {
     });
 
     const body = schema.parse(req.body);
-    
+
     const normalizedEmail = body.email ? body.email.toLowerCase().trim() : null;
     const normalizedPhone = body.phone ? body.phone.trim() : null;
-    
+
     const user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -239,7 +243,7 @@ router.post("/verify-code", async (req, res, next) => {
     }
 
     const isValid = await verifyCode(user.id, body.code);
-    
+
     if (!isValid) {
       throw new BadRequestError("Invalid or expired verification code");
     }

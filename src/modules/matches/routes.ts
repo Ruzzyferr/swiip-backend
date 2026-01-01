@@ -5,17 +5,30 @@ import { BadRequestError, NotFoundError } from "../../lib/httpErrors.js";
 
 const router = Router();
 
+/**
+ * GET /api/v1/matches
+ * Get paginated matches for the current user
+ * 
+ * Query params:
+ * - limit: number (default 20, max 50)
+ * - cursor: string (match ID to start after)
+ */
 router.get("/", authMiddleware, async (req, res, next) => {
   try {
     if (!req.user) {
       throw new BadRequestError("User not found");
     }
 
-    // Get all matches where user is either userA or userB
-    // Note: If you get "Cannot read properties of undefined", run: pnpm prisma:generate
+    // Parse pagination params
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+    const cursor = req.query.cursor as string | undefined;
+
+    const userId = req.user.id;
+
+    // Build query with cursor-based pagination
     const matches = await (prisma as any).match.findMany({
       where: {
-        OR: [{ userAId: req.user.id }, { userBId: req.user.id }],
+        OR: [{ userAId: userId }, { userBId: userId }],
       },
       include: {
         userA: {
@@ -37,34 +50,47 @@ router.get("/", authMiddleware, async (req, res, next) => {
       orderBy: {
         createdAt: "desc",
       },
+      take: limit + 1, // Fetch one extra to determine if there are more
+      ...(cursor && {
+        cursor: { id: cursor },
+        skip: 1, // Skip the cursor item
+      }),
     });
 
+    // Check if there are more items
+    const hasMore = matches.length > limit;
+    const items = hasMore ? matches.slice(0, -1) : matches;
+
     // Format response
-    const userId = req.user.id;
-    const matchesList = matches.map((match: any) => {
-      // Determine the other user
-      const otherUser =
-        match.userAId === userId ? match.userB : match.userA;
-      const otherProfile = otherUser.profile;
+    const matchesList = items
+      .map((match: any) => {
+        const otherUser =
+          match.userAId === userId ? match.userB : match.userA;
+        const otherProfile = otherUser.profile;
 
-      if (!otherProfile) {
-        return null; // Skip if other user has no profile
-      }
+        if (!otherProfile) {
+          return null;
+        }
 
-      return {
-        matchId: match.id,
-        conversationId: match.conversation?.id || null,
-        otherUser: {
-          userId: otherUser.id,
-          displayName: otherProfile.displayName,
-          photos: otherProfile.photos,
-          city: otherProfile.city,
-        },
-        createdAt: match.createdAt.toISOString(),
-      };
-    }).filter((m: any) => m !== null);
+        return {
+          matchId: match.id,
+          conversationId: match.conversation?.id || null,
+          otherUser: {
+            userId: otherUser.id,
+            displayName: otherProfile.displayName,
+            photos: otherProfile.photos,
+            city: otherProfile.city,
+          },
+          createdAt: match.createdAt.toISOString(),
+        };
+      })
+      .filter((m: any) => m !== null);
 
-    res.json(matchesList);
+    res.json({
+      items: matchesList,
+      nextCursor: hasMore ? items[items.length - 1]?.id : null,
+      hasMore,
+    });
   } catch (error) {
     next(error);
   }
@@ -101,12 +127,10 @@ router.get("/:matchId", authMiddleware, async (req, res, next) => {
       throw new NotFoundError("Match not found");
     }
 
-    // Check if user is part of this match
     if (match.userAId !== req.user.id && match.userBId !== req.user.id) {
       throw new NotFoundError("Match not found");
     }
 
-    // Determine the other user
     const otherUser = match.userAId === req.user.id ? match.userB : match.userA;
     const otherProfile = otherUser.profile;
 
@@ -131,4 +155,3 @@ router.get("/:matchId", authMiddleware, async (req, res, next) => {
 });
 
 export default router;
-

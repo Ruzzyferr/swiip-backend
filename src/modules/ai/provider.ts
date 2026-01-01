@@ -46,8 +46,8 @@ async function callOpenAI(prompt: string, apiKey: string, model: string): Promis
     throw new Error(`OpenAI API error: ${response.status} - ${error}`);
   }
 
-  const data = await response.json();
-  return data.choices[0]?.message?.content?.trim() || text;
+  const data = await response.json() as { choices: Array<{ message?: { content?: string } }> };
+  return data.choices[0]?.message?.content?.trim() || prompt;
 }
 
 async function callOpenRouter(prompt: string, apiKey: string, model: string): Promise<string> {
@@ -77,8 +77,8 @@ async function callOpenRouter(prompt: string, apiKey: string, model: string): Pr
     throw new Error(`OpenRouter API error: ${response.status} - ${error}`);
   }
 
-  const data = await response.json();
-  return data.choices[0]?.message?.content?.trim() || text;
+  const data = await response.json() as { choices: Array<{ message?: { content?: string } }> };
+  return data.choices[0]?.message?.content?.trim() || prompt;
 }
 
 

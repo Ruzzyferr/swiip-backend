@@ -44,11 +44,21 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
           select: {
             id: true,
             createdAt: true,
+            messages: {
+              orderBy: {
+                createdAt: "desc",
+              },
+              take: 1,
+              select: {
+                id: true,
+                text: true,
+                audioUrl: true,
+                createdAt: true,
+                senderUserId: true,
+              }
+            }
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
       },
     });
 
@@ -79,11 +89,22 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
                 profile: true,
               },
             },
+            firstMessage: true,
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
+        messages: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+          select: {
+            id: true,
+            text: true,
+            audioUrl: true,
+            createdAt: true,
+            senderUserId: true,
+          }
+        }
       },
     });
 
@@ -99,6 +120,8 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
           return null;
         }
 
+        const lastMessage = match.conversation.messages[0] || null;
+
         return {
           conversationId: match.conversation.id,
           matchId: match.id,
@@ -109,6 +132,12 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
             city: otherProfile.city,
           },
           createdAt: match.conversation.createdAt.toISOString(),
+          lastMessage: lastMessage ? {
+            text: lastMessage.text,
+            audioUrl: lastMessage.audioUrl,
+            createdAt: lastMessage.createdAt.toISOString(),
+            senderUserId: lastMessage.senderUserId,
+          } : null,
         };
       })
       .filter((c: any) => c !== null);
@@ -123,6 +152,17 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
         return null;
       }
 
+      let lastMessage = conv.messages[0] || null;
+
+      // If no messages yet, use firstMessage from request
+      if (!lastMessage && request.firstMessage) {
+        lastMessage = {
+          text: request.firstMessage.text,
+          createdAt: request.firstMessage.createdAt,
+          senderUserId: request.fromUserId,
+        };
+      }
+
       return {
         conversationId: conv.id,
         matchId: null,
@@ -133,12 +173,22 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
           city: otherProfile.city,
         },
         createdAt: conv.createdAt.toISOString(),
+        lastMessage: lastMessage ? {
+          text: lastMessage.text,
+          audioUrl: lastMessage.audioUrl || null,
+          createdAt: new Date(lastMessage.createdAt).toISOString(),
+          senderUserId: lastMessage.senderUserId,
+        } : null,
       };
     }).filter((c: any) => c !== null);
 
-    // Combine and sort by createdAt
+    // Combine and sort by lastMessageAt or createdAt
     const allConversations = [...matchConversations, ...requestConversations].sort(
-      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a: any, b: any) => {
+        const timeA = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : new Date(a.createdAt).getTime();
+        const timeB = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : new Date(b.createdAt).getTime();
+        return timeB - timeA;
+      }
     );
 
     res.json(allConversations);
@@ -221,7 +271,7 @@ router.get("/conversations/:conversationId", authMiddleware, async (req, res, ne
     // Handle conversation from REQUEST (FAVORITE requests)
     else if (conversation.request) {
       const request = conversation.request;
-      
+
       // Check if user is part of this request (either sender or receiver)
       if (request.fromUserId !== userId && request.toUserId !== userId) {
         throw new ForbiddenError("Access denied to this conversation");
@@ -335,7 +385,7 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
 
     // Check if user is part of this conversation (either via match or request)
     let otherUserId: string;
-    
+
     if (conversation.match) {
       // Conversation from MATCH (LIKE requests)
       if (
@@ -455,7 +505,7 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
     // Check if user is part of this conversation (either via match or request)
     const userId = req.user.id;
     let otherUserId: string;
-    
+
     if (conversation.match) {
       // Conversation from MATCH (LIKE requests)
       if (
@@ -526,7 +576,7 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
 
       // Only apply restriction if both users have gender set and it's a male-female match
       if (senderProfile?.gender && otherUserProfile?.gender) {
-        const isMaleFemaleMatch = 
+        const isMaleFemaleMatch =
           (senderProfile.gender === "MALE" && otherUserProfile.gender === "FEMALE") ||
           (senderProfile.gender === "FEMALE" && otherUserProfile.gender === "MALE");
 
@@ -726,7 +776,7 @@ router.post(
 
       // Check and increment message usage limit
       const usage = await incrementMSG(userId, user.isPremium);
-      if (!usage.canSend) {
+      if (!usage.msgAllowed) {
         return res.status(429).json({
           error: {
             code: "MSG_LIMIT_REACHED",
@@ -844,10 +894,10 @@ router.get("/requests", authMiddleware, async (req, res, next) => {
       },
       firstMessage: r.firstMessage
         ? {
-            id: r.firstMessage.id,
-            text: r.firstMessage.text,
-            createdAt: r.firstMessage.createdAt.toISOString(),
-          }
+          id: r.firstMessage.id,
+          text: r.firstMessage.text,
+          createdAt: r.firstMessage.createdAt.toISOString(),
+        }
         : null,
     }));
 
@@ -924,7 +974,7 @@ router.post("/requests/:requestId/reply", authMiddleware, async (req, res, next)
 
       // Only apply restriction if both users have gender set and it's a male-female match
       if (currentUserProfile?.gender && fromUserProfile?.gender) {
-        const isMaleFemaleMatch = 
+        const isMaleFemaleMatch =
           (currentUserProfile.gender === "MALE" && fromUserProfile.gender === "FEMALE") ||
           (currentUserProfile.gender === "FEMALE" && fromUserProfile.gender === "MALE");
 
@@ -965,8 +1015,12 @@ router.post("/requests/:requestId/reply", authMiddleware, async (req, res, next)
       },
     });
 
-    // Increment message count
-    await incrementMSG(req.user.id);
+    // Increment message count - get user's premium status first
+    const userForPremium = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { isPremium: true },
+    });
+    await incrementMSG(req.user.id, userForPremium?.isPremium || false);
 
     // Notify the sender
     const currentUserProfile = await prisma.profile.findUnique({
@@ -977,9 +1031,7 @@ router.post("/requests/:requestId/reply", authMiddleware, async (req, res, next)
     if (currentUserProfile) {
       await notifyNewMessage(
         request.fromUserId,
-        conversation.id,
-        currentUserProfile.displayName,
-        body.text
+        currentUserProfile.displayName
       );
     }
 

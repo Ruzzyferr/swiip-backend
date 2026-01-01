@@ -158,92 +158,98 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
     }
 
     // Get users I've already swiped on (PASS only - LIKE/FAVORITE are now ConversationRequests)
-    const mySwipes = await (prisma as any).swipe.findMany({
-      where: {
-        fromUserId: req.user.id,
-        type: "PASS",
-      },
-      select: { toUserId: true },
-    });
-    const swipedUserIds = new Set(mySwipes.map((s: { toUserId: string }) => s.toUserId));
-
-    // Get users with ConversationRequests
-    // For outgoing requests: PENDING and ACCEPTED always exclude, DECLINED exclude for 1 week
-    // For incoming requests: 
-    //   - PENDING: exclude only if created within 1 week (when someone liked me, hide them for 1 week)
-    //   - ACCEPTED: always exclude (matched users)
-    //   - DECLINED: exclude only if declined within 1 week (when I declined someone, hide them for 1 week)
+    // Execute all exclusion queries in PARALLEL for better performance
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const outgoingRequests = await (prisma as any).conversationRequest.findMany({
-      where: {
-        fromUserId: req.user.id,
-        OR: [
-          { status: "PENDING" },
-          { status: "ACCEPTED" },
-          {
-            status: "DECLINED",
-            updatedAt: { gte: oneWeekAgo },
-          },
-        ],
-      },
-      select: { toUserId: true },
-    });
-    const incomingRequests = await (prisma as any).conversationRequest.findMany({
-      where: {
-        toUserId: req.user.id,
-        OR: [
-          // PENDING: only exclude if created within 1 week (they liked me, hide them for 1 week)
-          {
-            status: "PENDING",
-            createdAt: { gte: oneWeekAgo },
-          },
-          { status: "ACCEPTED" },
-          // DECLINED: only exclude if declined within 1 week (I declined them, hide them for 1 week)
-          {
-            status: "DECLINED",
-            updatedAt: { gte: oneWeekAgo },
-          },
-        ],
-      },
-      select: { fromUserId: true },
-    });
+    const [
+      mySwipes,
+      outgoingRequests,
+      incomingRequests,
+      blocksWhereIBlocked,
+      blocksWhereIWasBlocked,
+      myReports,
+      activeBoosts,
+    ] = await Promise.all([
+      // Query 1: My PASS swipes
+      (prisma as any).swipe.findMany({
+        where: {
+          fromUserId: req.user.id,
+          type: "PASS",
+        },
+        select: { toUserId: true },
+      }),
+      // Query 2: Outgoing conversation requests
+      (prisma as any).conversationRequest.findMany({
+        where: {
+          fromUserId: req.user.id,
+          OR: [
+            { status: "PENDING" },
+            { status: "ACCEPTED" },
+            {
+              status: "DECLINED",
+              updatedAt: { gte: oneWeekAgo },
+            },
+          ],
+        },
+        select: { toUserId: true },
+      }),
+      // Query 3: Incoming conversation requests
+      (prisma as any).conversationRequest.findMany({
+        where: {
+          toUserId: req.user.id,
+          OR: [
+            {
+              status: "PENDING",
+              createdAt: { gte: oneWeekAgo },
+            },
+            { status: "ACCEPTED" },
+            {
+              status: "DECLINED",
+              updatedAt: { gte: oneWeekAgo },
+            },
+          ],
+        },
+        select: { fromUserId: true },
+      }),
+      // Query 4: Users I blocked
+      (prisma as any).block.findMany({
+        where: { blockerUserId: req.user.id },
+        select: { blockedUserId: true },
+      }),
+      // Query 5: Users who blocked me
+      (prisma as any).block.findMany({
+        where: { blockedUserId: req.user.id },
+        select: { blockerUserId: true },
+      }),
+      // Query 6: Users I reported
+      (prisma as any).report.findMany({
+        where: { reporterUserId: req.user.id },
+        select: { reportedUserId: true },
+      }),
+      // Query 7: Active boosts
+      (prisma as any).boost.findMany({
+        where: {
+          startsAt: { lte: now },
+          endsAt: { gte: now },
+        },
+        select: { userId: true },
+      }),
+    ]);
+
+    // Process results into Sets
+    const swipedUserIds = new Set(mySwipes.map((s: { toUserId: string }) => s.toUserId));
     const requestUserIds = new Set([
       ...outgoingRequests.map((r: { toUserId: string }) => r.toUserId),
       ...incomingRequests.map((r: { fromUserId: string }) => r.fromUserId),
     ]);
-
-    // Get blocked users (both ways)
-    const blocksWhereIBlocked = await (prisma as any).block.findMany({
-      where: { blockerUserId: req.user.id },
-      select: { blockedUserId: true },
-    });
-    const blocksWhereIWasBlocked = await (prisma as any).block.findMany({
-      where: { blockedUserId: req.user.id },
-      select: { blockerUserId: true },
-    });
     const blockedUserIds = new Set([
       ...blocksWhereIBlocked.map((b: { blockedUserId: string }) => b.blockedUserId),
       ...blocksWhereIWasBlocked.map((b: { blockerUserId: string }) => b.blockerUserId),
     ]);
-
-    // Get reported users (exclude them)
-    const myReports = await (prisma as any).report.findMany({
-      where: { reporterUserId: req.user.id },
-      select: { reportedUserId: true },
-    });
     const reportedUserIds = new Set(myReports.map((r: { reportedUserId: string }) => r.reportedUserId));
-
-    // Get active boosts (using the 'now' variable already defined above)
-    const activeBoosts = await (prisma as any).boost.findMany({
-      where: {
-        startsAt: { lte: now },
-        endsAt: { gte: now },
-      },
-      select: { userId: true },
-    });
     const boostedUserIds = new Set(activeBoosts.map((b: { userId: string }) => b.userId));
+
 
     // Combine excluded user IDs
     const excludedUserIds = new Set([

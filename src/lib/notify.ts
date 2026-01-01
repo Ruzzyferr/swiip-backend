@@ -31,7 +31,7 @@ export async function notifyNewMatch(
     //   data: { type: "match", userId }
     // }
   } catch (error) {
-    logger.error(`Failed to notify new match for user ${userId}:`, error);
+    logger.error(`Failed to notify new match for user ${userId}:`, { error: error instanceof Error ? error.message : String(error) });
     // Don't throw - notification failures shouldn't break the flow
   }
 }
@@ -61,7 +61,7 @@ export async function notifyNewMessage(
     //   data: { type: "message", conversationId, senderUserId }
     // }
   } catch (error) {
-    logger.error(`Failed to notify new message for user ${userId}:`, error);
+    logger.error(`Failed to notify new message for user ${userId}:`, { error: error instanceof Error ? error.message : String(error) });
     // Don't throw - notification failures shouldn't break the flow
   }
 }

@@ -7,7 +7,9 @@ import { BadRequestError, PaymentRequiredError } from "../../lib/httpErrors.js";
 const router = Router();
 
 const activateBoostSchema = z.object({
-  minutes: z.enum([60, 180, 720]),
+  minutes: z.coerce.number().refine((val) => [60, 180, 720].includes(val), {
+    message: "Minutes must be 60, 180, or 720",
+  }),
 });
 
 router.post("/activate", authMiddleware, async (req, res, next) => {
