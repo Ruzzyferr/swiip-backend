@@ -9,6 +9,7 @@ import { notifyNewMessage } from "../../lib/notify.js";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import fs from "fs/promises";
+import { StorageService } from "../../lib/storage.js";
 
 const router = Router();
 
@@ -647,23 +648,9 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
   }
 });
 
-// Configure multer for audio uploads
+// Configure multer for audio uploads (Memory Storage for S3)
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: async (req, file, cb) => {
-      const uploadDir = path.join(process.cwd(), "uploads", "audio");
-      try {
-        await fs.mkdir(uploadDir, { recursive: true });
-        cb(null, uploadDir);
-      } catch (error) {
-        cb(error as Error, uploadDir);
-      }
-    },
-    filename: (req, file, cb) => {
-      const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
-      cb(null, uniqueName);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
@@ -791,8 +778,8 @@ router.post(
         });
       }
 
-      // Create audio URL (in production, upload to S3 or similar)
-      const audioUrl = `/uploads/audio/${req.file.filename}`;
+      // Upload audio to S3/MinIO
+      const audioUrl = await StorageService.uploadFile(req.file, "audio");
 
       // Create message with audio
       const message = await (prisma as any).message.create({

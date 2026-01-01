@@ -20,6 +20,13 @@ const envSchema = z.object({
   // RevenueCat Webhook
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   APP_BASE_URL: z.string().url().optional(),
+  // S3 / MinIO Configuration
+  S3_ENDPOINT: z.string().optional(), // If using MinIO / R2
+  S3_REGION: z.string().default("us-east-1"),
+  S3_BUCKET: z.string().optional(),
+  S3_ACCESS_KEY: z.string().optional(),
+  S3_SECRET_KEY: z.string().optional(),
+  S3_PUBLIC_URL: z.string().url().optional(), // Optional custom public URL
 }).refine((data) => {
   // Only enforce API key in production
   if (data.NODE_ENV === "production") {

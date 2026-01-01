@@ -15,6 +15,7 @@ import referralRoutes from "../../modules/referral/routes.js";
 import webhooksRoutes from "../../modules/webhooks/routes.js";
 import rewardsRoutes from "../../modules/rewards/routes.js";
 import requestsRoutes from "../../modules/requests/routes.js";
+import storageRoutes from "../../modules/storage/routes.js";
 import healthRoutes from "../health.js";
 import {
     authLimiter,
