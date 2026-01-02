@@ -62,6 +62,7 @@ model User {
   lastLikeResetAt        DateTime?
   dailyDirectUsed        Int       @default(0)
   lastDirectResetAt      DateTime?
+  weeklyFavoriteAdUsedAt DateTime? // Last time user used weekly free favorite via ad
   lastFeedShuffleAt      DateTime? // Last time feed was shuffled (12-hour cache)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt

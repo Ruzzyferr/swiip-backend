@@ -564,6 +564,7 @@ router.post("/like", authMiddleware, async (req, res, next) => {
 
     // Check like limit (premium users have unlimited)
     const likeCheck = await canLike(req.user.id, currentUser.isPremium);
+
     if (!likeCheck.canLike) {
       return res.status(429).json({
         error: {

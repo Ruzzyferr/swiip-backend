@@ -152,7 +152,7 @@ async function main() {
         create: {
           email: "alex@swiip.com",
           phone: "+905551234567",
-          isPremium: true,
+          isPremium: false,
           premiumSource: "stripe",
           premiumUpdatedAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
           premiumExpiresAt: new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000), // 20 days left
@@ -2092,6 +2092,58 @@ async function main() {
         },
       });
     })(),
+
+    // User 41: Test - PREMIUM test account
+    (async () => {
+      const testPhotos = await Promise.all([
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+        "https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?w=400",
+        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
+      ].map(uploadFromUrl));
+
+      return prisma.user.upsert({
+        where: { email: "test@swiip.com" },
+        update: {
+          profile: {
+            update: {
+              photos: testPhotos,
+            }
+          }
+        },
+        create: {
+          email: "test@swiip.com",
+          phone: "+905551234607",
+          isPremium: true,
+          premiumSource: "admin",
+          premiumUpdatedAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+          premiumExpiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+          lastActiveAt: now,
+          referralCode: "TEST01",
+          dailyLikesUsed: 0,
+          dailyExtraLikesFromAds: 0,
+          lastLikeResetAt: now,
+          dailyDirectUsed: 0,
+          lastDirectResetAt: now,
+          profile: {
+            create: {
+              displayName: "Test User",
+              birthYear: 1995,
+              city: "Istanbul",
+              country: "TR",
+              lat: ISTANBUL_LAT + (Math.random() - 0.5) * 0.1,
+              lng: ISTANBUL_LNG + (Math.random() - 0.5) * 0.1,
+              gender: "MALE",
+              languagesNative: ["Turkish", "English"],
+              languagesPractice: ["Spanish", "French"],
+              purpose: "CONVERSATION",
+              bio: "Test account for development and testing purposes.",
+              photos: testPhotos,
+            },
+          },
+        },
+      });
+    })(),
   ]);
 
   console.log(`✅ Created ${users.length} users`);
@@ -2110,7 +2162,7 @@ async function main() {
 
   // Create sessions for test users
   console.log("🔐 Creating sessions...");
-  const testUser = users[0]; // Alex
+  const testUser = users.find(u => u.email === "test@swiip.com") || users[0]; // Test user or fallback to Alex
   const token = generateSessionToken();
   const tokenHash = hashSessionToken(token);
   const expiresAt = getSessionExpiry();
@@ -2720,7 +2772,7 @@ async function main() {
   console.log("\n📋 Test Credentials:");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log(`Email: test@swiip.com`);
-  console.log(`Phone: +905551234567`);
+  console.log(`Phone: +905551234607`);
   console.log(`Token: ${token}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("\n👥 User Details:");
