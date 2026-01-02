@@ -6,6 +6,7 @@ import { BadRequestError, ConflictError, NotFoundError, PaymentRequiredError } f
 import { calculateDistanceKm, EU_COUNTRIES } from "../../lib/distance.js";
 import { notifyNewMatch } from "../../lib/notify.js";
 import { canLike, incrementLike, canSendDirect, incrementDirect } from "../../lib/usage.js";
+import { StorageService } from "../../lib/storage.js";
 
 const router = Router();
 
@@ -506,21 +507,28 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
     // Take top N
     const selectedProfiles = scoredProfiles.slice(0, limit);
 
-    // Format response
-    const discoveryCards = selectedProfiles.map(({ profile, distanceKm }) => ({
-      userId: profile.userId,
-      distanceKm: distanceKm, // Only included if maxDistanceKm was provided
-      profile: {
-        displayName: profile.displayName,
-        birthYear: profile.birthYear,
-        city: profile.city,
-        purpose: profile.purpose,
-        bio: profile.bio,
-        photos: profile.photos,
-        languagesNative: profile.languagesNative,
-        languagesPractice: profile.languagesPractice,
-      },
-    }));
+    // Format response and transform photo URLs to presigned URLs
+    const discoveryCards = await Promise.all(
+      selectedProfiles.map(async ({ profile, distanceKm }) => {
+        // Transform photo URLs to presigned URLs for private MinIO buckets
+        const photos = await StorageService.transformPhotoUrls(profile.photos, 3600); // 1 hour expiry
+
+        return {
+          userId: profile.userId,
+          distanceKm: distanceKm, // Only included if maxDistanceKm was provided
+          profile: {
+            displayName: profile.displayName,
+            birthYear: profile.birthYear,
+            city: profile.city,
+            purpose: profile.purpose,
+            bio: profile.bio,
+            photos: photos,
+            languagesNative: profile.languagesNative,
+            languagesPractice: profile.languagesPractice,
+          },
+        };
+      })
+    );
 
     res.json(discoveryCards);
   } catch (error) {

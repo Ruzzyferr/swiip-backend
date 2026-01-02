@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, NotFoundError } from "../../lib/httpErrors.js";
+import { StorageService } from "../../lib/storage.js";
 
 const router = Router();
 
@@ -38,7 +39,13 @@ router.get("/me", authMiddleware, async (req, res, next) => {
       throw new NotFoundError("Profile not found");
     }
 
-    res.json(profile);
+    // Transform photo URLs to presigned URLs
+    const photos = await StorageService.transformPhotoUrls(profile.photos, 3600);
+
+    res.json({
+      ...profile,
+      photos: photos,
+    });
   } catch (error) {
     next(error);
   }
@@ -130,7 +137,13 @@ router.get("/:userId", authMiddleware, async (req, res, next) => {
       throw new NotFoundError("Profile not found");
     }
 
-    res.json(profile);
+    // Transform photo URLs to presigned URLs
+    const photos = await StorageService.transformPhotoUrls(profile.photos, 3600);
+
+    res.json({
+      ...profile,
+      photos: photos,
+    });
   } catch (error) {
     next(error);
   }

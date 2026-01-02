@@ -110,81 +110,96 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
     });
 
     // Format match-based conversations
-    const matchConversations = matches
-      .filter((match: any) => match.conversation) // Only include matches with conversations
-      .map((match: any) => {
-        const otherUser =
-          match.userAId === userId ? match.userB : match.userA;
-        const otherProfile = otherUser.profile;
+    const matchConversations = await Promise.all(
+      matches
+        .filter((match: any) => match.conversation) // Only include matches with conversations
+        .map(async (match: any) => {
+          const otherUser =
+            match.userAId === userId ? match.userB : match.userA;
+          const otherProfile = otherUser.profile;
+
+          if (!otherProfile) {
+            return null;
+          }
+
+          const lastMessage = match.conversation.messages[0] || null;
+
+          // Transform photo URLs to presigned URLs
+          const photos = await StorageService.transformPhotoUrls(otherProfile.photos, 3600);
+
+          return {
+            conversationId: match.conversation.id,
+            matchId: match.id,
+            otherUser: {
+              userId: otherUser.id,
+              displayName: otherProfile.displayName,
+              photos: photos,
+              city: otherProfile.city,
+            },
+            createdAt: match.conversation.createdAt.toISOString(),
+            lastMessage: lastMessage ? {
+              text: lastMessage.text,
+              audioUrl: lastMessage.audioUrl 
+                ? await StorageService.transformAudioUrl(lastMessage.audioUrl, 3600)
+                : null,
+              createdAt: lastMessage.createdAt.toISOString(),
+              senderUserId: lastMessage.senderUserId,
+            } : null,
+          };
+        })
+    );
+    const filteredMatchConversations = matchConversations.filter((c: any) => c !== null);
+
+    // Format request-based conversations (FAVORITE)
+    const requestConversations = await Promise.all(
+      favoriteConversations.map(async (conv: any) => {
+        const request = conv.request;
+        const otherUser = request.fromUserId === userId ? request.toUser : request.fromUser;
+        const otherProfile = otherUser?.profile;
 
         if (!otherProfile) {
           return null;
         }
 
-        const lastMessage = match.conversation.messages[0] || null;
+        let lastMessage = conv.messages[0] || null;
+
+        // If no messages yet, use firstMessage from request
+        if (!lastMessage && request.firstMessage) {
+          lastMessage = {
+            text: request.firstMessage.text,
+            createdAt: request.firstMessage.createdAt,
+            senderUserId: request.fromUserId,
+          };
+        }
+
+        // Transform photo URLs to presigned URLs
+        const photos = await StorageService.transformPhotoUrls(otherProfile.photos, 3600);
 
         return {
-          conversationId: match.conversation.id,
-          matchId: match.id,
+          conversationId: conv.id,
+          matchId: null,
           otherUser: {
             userId: otherUser.id,
             displayName: otherProfile.displayName,
-            photos: otherProfile.photos,
+            photos: photos,
             city: otherProfile.city,
           },
-          createdAt: match.conversation.createdAt.toISOString(),
+          createdAt: conv.createdAt.toISOString(),
           lastMessage: lastMessage ? {
             text: lastMessage.text,
-            audioUrl: lastMessage.audioUrl,
-            createdAt: lastMessage.createdAt.toISOString(),
+            audioUrl: lastMessage.audioUrl 
+              ? await StorageService.transformAudioUrl(lastMessage.audioUrl, 3600)
+              : null,
+            createdAt: new Date(lastMessage.createdAt).toISOString(),
             senderUserId: lastMessage.senderUserId,
           } : null,
         };
       })
-      .filter((c: any) => c !== null);
-
-    // Format request-based conversations (FAVORITE)
-    const requestConversations = favoriteConversations.map((conv: any) => {
-      const request = conv.request;
-      const otherUser = request.fromUserId === userId ? request.toUser : request.fromUser;
-      const otherProfile = otherUser?.profile;
-
-      if (!otherProfile) {
-        return null;
-      }
-
-      let lastMessage = conv.messages[0] || null;
-
-      // If no messages yet, use firstMessage from request
-      if (!lastMessage && request.firstMessage) {
-        lastMessage = {
-          text: request.firstMessage.text,
-          createdAt: request.firstMessage.createdAt,
-          senderUserId: request.fromUserId,
-        };
-      }
-
-      return {
-        conversationId: conv.id,
-        matchId: null,
-        otherUser: {
-          userId: otherUser.id,
-          displayName: otherProfile.displayName,
-          photos: otherProfile.photos,
-          city: otherProfile.city,
-        },
-        createdAt: conv.createdAt.toISOString(),
-        lastMessage: lastMessage ? {
-          text: lastMessage.text,
-          audioUrl: lastMessage.audioUrl || null,
-          createdAt: new Date(lastMessage.createdAt).toISOString(),
-          senderUserId: lastMessage.senderUserId,
-        } : null,
-      };
-    }).filter((c: any) => c !== null);
+    );
+    const filteredRequestConversations = requestConversations.filter((c: any) => c !== null);
 
     // Combine and sort by lastMessageAt or createdAt
-    const allConversations = [...matchConversations, ...requestConversations].sort(
+    const allConversations = [...filteredMatchConversations, ...filteredRequestConversations].sort(
       (a: any, b: any) => {
         const timeA = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : new Date(a.createdAt).getTime();
         const timeB = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : new Date(b.createdAt).getTime();
@@ -331,13 +346,16 @@ router.get("/conversations/:conversationId", authMiddleware, async (req, res, ne
       where: { conversationId: conversation.id },
     });
 
+    // Transform photo URLs to presigned URLs
+    const photos = await StorageService.transformPhotoUrls(otherProfile.photos, 3600);
+
     res.json({
       conversationId: conversation.id,
       matchId,
       otherUser: {
         userId: otherUser.id,
         displayName: otherProfile.displayName,
-        photos: otherProfile.photos,
+        photos: photos,
         city: otherProfile.city,
         gender: otherProfile.gender,
       },
@@ -440,16 +458,21 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
     // Reverse to get chronological order
     messages.reverse();
 
-    res.json(
-      messages.map((msg: any) => ({
+    // Transform audio URLs to presigned URLs
+    const messagesWithPresignedUrls = await Promise.all(
+      messages.map(async (msg: any) => ({
         id: msg.id,
         conversationId: msg.conversationId,
         senderUserId: msg.senderUserId,
         text: msg.text,
-        audioUrl: msg.audioUrl || null,
+        audioUrl: msg.audioUrl 
+          ? await StorageService.transformAudioUrl(msg.audioUrl, 3600)
+          : null,
         createdAt: msg.createdAt.toISOString(),
       }))
     );
+
+    res.json(messagesWithPresignedUrls);
   } catch (error) {
     next(error);
   }
@@ -778,8 +801,13 @@ router.post(
         });
       }
 
-      // Upload audio to S3/MinIO
-      const audioUrl = await StorageService.uploadFile(req.file, "audio");
+      // Upload audio to S3/MinIO with metadata
+      const audioUrl = await StorageService.uploadFile(req.file, "audio", {
+        metadata: {
+          'uploaded-by': userId,
+          'conversation-id': conversationId,
+        }
+      });
 
       // Create message with audio
       const message = await (prisma as any).message.create({
@@ -790,6 +818,9 @@ router.post(
           audioUrl,
         },
       });
+
+      // Transform audio URL to presigned URL for response
+      const presignedAudioUrl = await StorageService.transformAudioUrl(audioUrl, 3600);
 
       // Notify other user
       const senderProfile = await prisma.profile.findUnique({
@@ -806,7 +837,7 @@ router.post(
         conversationId: message.conversationId,
         senderUserId: message.senderUserId,
         text: message.text,
-        audioUrl: message.audioUrl,
+        audioUrl: presignedAudioUrl, // Return presigned URL
         createdAt: message.createdAt.toISOString(),
       });
     } catch (error) {

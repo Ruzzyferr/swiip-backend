@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, NotFoundError } from "../../lib/httpErrors.js";
+import { StorageService } from "../../lib/storage.js";
 
 const router = Router();
 
@@ -61,33 +62,39 @@ router.get("/", authMiddleware, async (req, res, next) => {
     const hasMore = matches.length > limit;
     const items = hasMore ? matches.slice(0, -1) : matches;
 
-    // Format response
-    const matchesList = items
-      .map((match: any) => {
-        const otherUser =
-          match.userAId === userId ? match.userB : match.userA;
-        const otherProfile = otherUser.profile;
+    // Format response and transform photo URLs to presigned URLs
+    const matchesList = await Promise.all(
+      items
+        .map(async (match: any) => {
+          const otherUser =
+            match.userAId === userId ? match.userB : match.userA;
+          const otherProfile = otherUser.profile;
 
-        if (!otherProfile) {
-          return null;
-        }
+          if (!otherProfile) {
+            return null;
+          }
 
-        return {
-          matchId: match.id,
-          conversationId: match.conversation?.id || null,
-          otherUser: {
-            userId: otherUser.id,
-            displayName: otherProfile.displayName,
-            photos: otherProfile.photos,
-            city: otherProfile.city,
-          },
-          createdAt: match.createdAt.toISOString(),
-        };
-      })
-      .filter((m: any) => m !== null);
+          // Transform photo URLs to presigned URLs
+          const photos = await StorageService.transformPhotoUrls(otherProfile.photos, 3600);
+
+          return {
+            matchId: match.id,
+            conversationId: match.conversation?.id || null,
+            otherUser: {
+              userId: otherUser.id,
+              displayName: otherProfile.displayName,
+              photos: photos,
+              city: otherProfile.city,
+            },
+            createdAt: match.createdAt.toISOString(),
+          };
+        })
+    );
+
+    const filteredMatches = matchesList.filter((m: any) => m !== null);
 
     res.json({
-      items: matchesList,
+      items: filteredMatches,
       nextCursor: hasMore ? items[items.length - 1]?.id : null,
       hasMore,
     });
@@ -138,13 +145,16 @@ router.get("/:matchId", authMiddleware, async (req, res, next) => {
       throw new NotFoundError("User profile not found");
     }
 
+    // Transform photo URLs to presigned URLs
+    const photos = await StorageService.transformPhotoUrls(otherProfile.photos, 3600);
+
     res.json({
       matchId: match.id,
       conversationId: match.conversation?.id || null,
       otherUser: {
         userId: otherUser.id,
         displayName: otherProfile.displayName,
-        photos: otherProfile.photos,
+        photos: photos,
         city: otherProfile.city,
       },
       createdAt: match.createdAt.toISOString(),

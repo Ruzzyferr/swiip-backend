@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, NotFoundError, ConflictError } from "../../lib/httpErrors.js";
 import { notifyNewMatch } from "../../lib/notify.js";
+import { StorageService } from "../../lib/storage.js";
 
 const router = Router();
 
@@ -72,30 +73,36 @@ router.get("/incoming", authMiddleware, async (req, res, next) => {
       },
     });
 
-    const formattedRequests = requests.map((r: any) => ({
-      requestId: r.id,
-      fromUserId: r.fromUserId,
-      kind: r.kind,
-      status: r.status,
-      createdAt: r.createdAt.toISOString(),
-      fromUser: {
-        userId: r.fromUser.id,
-        displayName: r.fromUser.profile?.displayName || "Unknown",
-        photos: r.fromUser.profile?.photos || [],
-        city: r.fromUser.profile?.city || null,
-        languagesNative: r.fromUser.profile?.languagesNative || [],
-        languagesPractice: r.fromUser.profile?.languagesPractice || [],
-        birthYear: r.fromUser.profile?.birthYear || null,
-        bio: r.fromUser.profile?.bio || null,
-      },
-      firstMessage: r.firstMessage
-        ? {
-            id: r.firstMessage.id,
-            text: r.firstMessage.text,
-            createdAt: r.firstMessage.createdAt.toISOString(),
-          }
-        : null,
-    }));
+    // Transform photo URLs to presigned URLs
+    const formattedRequests = await Promise.all(
+      requests.map(async (r: any) => {
+        const photos = await StorageService.transformPhotoUrls(r.fromUser.profile?.photos || [], 3600);
+        return {
+          requestId: r.id,
+          fromUserId: r.fromUserId,
+          kind: r.kind,
+          status: r.status,
+          createdAt: r.createdAt.toISOString(),
+          fromUser: {
+            userId: r.fromUser.id,
+            displayName: r.fromUser.profile?.displayName || "Unknown",
+            photos: photos,
+            city: r.fromUser.profile?.city || null,
+            languagesNative: r.fromUser.profile?.languagesNative || [],
+            languagesPractice: r.fromUser.profile?.languagesPractice || [],
+            birthYear: r.fromUser.profile?.birthYear || null,
+            bio: r.fromUser.profile?.bio || null,
+          },
+          firstMessage: r.firstMessage
+            ? {
+                id: r.firstMessage.id,
+                text: r.firstMessage.text,
+                createdAt: r.firstMessage.createdAt.toISOString(),
+              }
+            : null,
+        };
+      })
+    );
 
     res.json(formattedRequests);
   } catch (error) {
@@ -151,30 +158,36 @@ router.get("/outgoing", authMiddleware, async (req, res, next) => {
       },
     });
 
-    const formattedRequests = requests.map((r: any) => ({
-      requestId: r.id,
-      toUserId: r.toUserId,
-      kind: r.kind,
-      status: r.status,
-      createdAt: r.createdAt.toISOString(),
-      toUser: {
-        userId: r.toUser.id,
-        displayName: r.toUser.profile?.displayName || "Unknown",
-        photos: r.toUser.profile?.photos || [],
-        city: r.toUser.profile?.city || null,
-        languagesNative: r.toUser.profile?.languagesNative || [],
-        languagesPractice: r.toUser.profile?.languagesPractice || [],
-        birthYear: r.toUser.profile?.birthYear || null,
-        bio: r.toUser.profile?.bio || null,
-      },
-      firstMessage: r.firstMessage
-        ? {
-            id: r.firstMessage.id,
-            text: r.firstMessage.text,
-            createdAt: r.firstMessage.createdAt.toISOString(),
-          }
-        : null,
-    }));
+    // Transform photo URLs to presigned URLs
+    const formattedRequests = await Promise.all(
+      requests.map(async (r: any) => {
+        const photos = await StorageService.transformPhotoUrls(r.toUser.profile?.photos || [], 3600);
+        return {
+          requestId: r.id,
+          toUserId: r.toUserId,
+          kind: r.kind,
+          status: r.status,
+          createdAt: r.createdAt.toISOString(),
+          toUser: {
+            userId: r.toUser.id,
+            displayName: r.toUser.profile?.displayName || "Unknown",
+            photos: photos,
+            city: r.toUser.profile?.city || null,
+            languagesNative: r.toUser.profile?.languagesNative || [],
+            languagesPractice: r.toUser.profile?.languagesPractice || [],
+            birthYear: r.toUser.profile?.birthYear || null,
+            bio: r.toUser.profile?.bio || null,
+          },
+          firstMessage: r.firstMessage
+            ? {
+                id: r.firstMessage.id,
+                text: r.firstMessage.text,
+                createdAt: r.firstMessage.createdAt.toISOString(),
+              }
+            : null,
+        };
+      })
+    );
 
     res.json(formattedRequests);
   } catch (error) {

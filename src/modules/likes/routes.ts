@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, PaymentRequiredError } from "../../lib/httpErrors.js";
+import { StorageService } from "../../lib/storage.js";
 
 const router = Router();
 
@@ -164,20 +165,26 @@ router.get("/incoming", authMiddleware, async (req, res, next) => {
     ]);
 
     // Filter and format
-    const validLikes = incomingLikes
-      .filter(
-        (like: any) =>
-          like.fromUser.profile &&
-          !matchedUserIds.has(like.fromUserId) &&
-          !blockedUserIds.has(like.fromUserId)
-      )
-      .map((like: any) => ({
-        fromUserId: like.fromUserId,
-        displayName: like.fromUser.profile.displayName,
-        city: like.fromUser.profile.city,
-        photos: like.fromUser.profile.photos,
-        createdAt: like.createdAt.toISOString(),
-      }));
+    const filteredLikes = incomingLikes.filter(
+      (like: any) =>
+        like.fromUser.profile &&
+        !matchedUserIds.has(like.fromUserId) &&
+        !blockedUserIds.has(like.fromUserId)
+    );
+
+    // Transform photo URLs to presigned URLs
+    const validLikes = await Promise.all(
+      filteredLikes.map(async (like: any) => {
+        const photos = await StorageService.transformPhotoUrls(like.fromUser.profile.photos, 3600);
+        return {
+          fromUserId: like.fromUserId,
+          displayName: like.fromUser.profile.displayName,
+          city: like.fromUser.profile.city,
+          photos: photos,
+          createdAt: like.createdAt.toISOString(),
+        };
+      })
+    );
 
     res.json(validLikes);
   } catch (error) {
