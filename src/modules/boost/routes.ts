@@ -134,7 +134,6 @@ router.post("/activate", authMiddleware, async (req, res, next) => {
         userId,
         startsAt: now,
         endsAt,
-        durationMinutes: 30, // 30 minutes
       },
     });
 
