@@ -13,6 +13,9 @@ import { logger } from "./lib/logger.js";
 export function createApp(): Express {
   const app = express();
 
+  // Trust proxy (required for Render/Heroku etc)
+  app.set("trust proxy", 1);
+
   // Security middleware
   app.use(helmet());
   app.use(cors({ origin: true, credentials: true }));
@@ -20,7 +23,7 @@ export function createApp(): Express {
   // Body parsing
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-  
+
   // Serve uploaded files
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
@@ -42,7 +45,7 @@ export function createApp(): Express {
   // Error handling middleware
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     const requestId = req.id || "unknown";
-    
+
     if (err instanceof HttpError) {
       logger.warn("HTTP error", {
         requestId,
@@ -50,7 +53,7 @@ export function createApp(): Express {
         message: err.message,
         code: err.code,
       });
-      
+
       return res.status(err.statusCode).json({
         error: {
           code: err.code || "HTTP_ERROR",
@@ -70,7 +73,7 @@ export function createApp(): Express {
         field,
         message: firstError.message,
       });
-      
+
       return res.status(400).json({
         error: {
           code: "VALIDATION_ERROR",
