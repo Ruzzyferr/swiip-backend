@@ -85,8 +85,14 @@ export class StorageService {
      * @returns Presigned URL that allows temporary access to the object
      */
     static async getPresignedUrl(url: string, expiresIn: number = 3600): Promise<string> {
-        // If S3 is not configured, return original URL
+        // If S3 is not configured
         if (!env.S3_BUCKET || !env.S3_ACCESS_KEY || !env.S3_SECRET_KEY) {
+            // If it's a local path (starts with /) and we have a base URL, prepend it
+            if (url.startsWith("/") && env.APP_BASE_URL) {
+                // Remove trailing slash from base and leading slash from url to avoid double slashes
+                const baseUrl = env.APP_BASE_URL.replace(/\/$/, "");
+                return `${baseUrl}${url}`;
+            }
             return url;
         }
 

@@ -46,5 +46,6 @@ router.use("/referral", referralRoutes);                 // Uses general limiter
 router.use("/webhooks", webhooksRoutes);                 // No rate limit for webhooks
 router.use("/rewards", rewardsRoutes);                   // Uses general limiter
 router.use("/requests", requestsRoutes);                 // Uses general limiter
+router.use("/storage", storageRoutes);                   // Uses general limiter
 
 export default router;
