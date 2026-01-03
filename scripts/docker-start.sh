@@ -15,7 +15,7 @@ echo "✅ PostgreSQL is ready!"
 
 # Run Prisma migrations
 echo "📦 Running database migrations..."
-npx prisma migrate deploy
+pnpm prisma migrate deploy
 
 # Start the application
 echo "🎉 Starting application on port ${PORT:-4000}..."
