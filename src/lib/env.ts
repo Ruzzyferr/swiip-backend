@@ -10,7 +10,6 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: z.string().optional(),
   AI_MODEL: z.string().default("gpt-4o-mini"),
   AI_DAILY_FREE_LIMIT: z.coerce.number().int().positive().default(10),
-  MSG_DAILY_FREE_LIMIT: z.coerce.number().int().positive().default(30),
   LIKE_DAILY_FREE_LIMIT: z.coerce.number().int().positive().default(15),
   LIKE_REWARD_AMOUNT: z.coerce.number().int().positive().default(3),
   LIKE_MAX_REWARDS_PER_DAY: z.coerce.number().int().positive().default(5),

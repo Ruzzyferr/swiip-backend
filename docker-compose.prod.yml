@@ -1,0 +1,131 @@
+version: '3.8'
+
+# Production Docker Compose Configuration
+# Usage: docker-compose -f docker-compose.prod.yml --env-file .env.docker up -d
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: swiip-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password is required}
+      POSTGRES_DB: ${DB_NAME:-swiip}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # MinIO S3-Compatible Storage
+  minio:
+    image: minio/minio
+    container_name: swiip-minio-prod
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MinIO root user is required}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MinIO root password is required}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # MinIO Bucket Initialization
+  minio-init:
+    image: minio/mc
+    container_name: swiip-minio-init-prod
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    entrypoint: >
+      /bin/sh -c " mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; mc mb myminio/swiip-photos --ignore-existing; mc anonymous set download myminio/swiip-photos; echo 'Bucket swiip-photos created and configured!'; exit 0; "
+
+  # Backend Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: swiip-backend-prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # Server
+      PORT: 4000
+      NODE_ENV: production
+
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-swiip}
+
+      # MinIO / S3
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: swiip-photos
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://localhost:9000/swiip-photos}
+
+      # AI Configuration
+      AI_PROVIDER: ${AI_PROVIDER:-openrouter}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+
+      # Limits
+      AI_DAILY_FREE_LIMIT: ${AI_DAILY_FREE_LIMIT:-5}
+      LIKE_DAILY_FREE_LIMIT: ${LIKE_DAILY_FREE_LIMIT:-10}
+      LIKE_REWARD_AMOUNT: ${LIKE_REWARD_AMOUNT:-3}
+      LIKE_MAX_REWARDS_PER_DAY: ${LIKE_MAX_REWARDS_PER_DAY:-5}
+      DIRECT_WEEKLY_FREE_LIMIT: ${DIRECT_WEEKLY_FREE_LIMIT:-1}
+      DIRECT_WEEKLY_PREMIUM_LIMIT: ${DIRECT_WEEKLY_PREMIUM_LIMIT:-5}
+
+      # Admin
+      ADMIN_KEY: ${ADMIN_KEY:-}
+
+      # RevenueCat (required in production)
+      REVENUECAT_WEBHOOK_SECRET: ${REVENUECAT_WEBHOOK_SECRET:?RevenueCat webhook secret is required}
+      APP_BASE_URL: ${APP_BASE_URL:?App base URL is required}
+
+      # Google OAuth (optional)
+      EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID:-}
+      EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID:-}
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:-}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./uploads:/app/uploads
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+volumes:
+  postgres-data:
+  minio-data:

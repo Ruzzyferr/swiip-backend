@@ -30,7 +30,7 @@ export class StorageService {
      * @returns Public URL of the uploaded file
      */
     static async uploadFile(
-        file: Express.Multer.File, 
+        file: Express.Multer.File,
         folder: string = "uploads",
         options?: { metadata?: Record<string, string> }
     ): Promise<string> {
@@ -73,7 +73,7 @@ export class StorageService {
             logger.info(`File uploaded to S3: ${publicUrl}`);
             return publicUrl;
         } catch (error) {
-            logger.error("S3 Upload Error", error);
+            logger.error("S3 Upload Error", { error });
             throw new Error("File upload failed");
         }
     }
@@ -104,7 +104,7 @@ export class StorageService {
                 try {
                     const urlObj = new URL(url);
                     const pathParts = urlObj.pathname.split("/").filter(p => p);
-                    
+
                     // For MinIO with forcePathStyle: https://endpoint/bucket/key
                     // For MinIO virtual hosted: https://bucket.endpoint/key
                     // Check if bucket name is in the path

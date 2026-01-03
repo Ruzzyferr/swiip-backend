@@ -56,7 +56,7 @@ export async function incrementAI(userId: string, isPremium: boolean): Promise<U
     aiCount: usage.aiCount,
     msgCount: usage.msgCount,
     aiLimit: limit,
-    msgLimit: isPremium ? Infinity : env.MSG_DAILY_FREE_LIMIT,
+    msgLimit: Infinity, // No message limit for any user
     isPremium,
     aiAllowed,
     msgAllowed: true, // Will be checked separately
@@ -69,7 +69,7 @@ export async function incrementAI(userId: string, isPremium: boolean): Promise<U
 export async function incrementMSG(userId: string, isPremium: boolean): Promise<UsageResult> {
   const env = getEnv();
   const dayKey = getDayKey();
-  const limit = isPremium ? Infinity : env.MSG_DAILY_FREE_LIMIT;
+  const limit = Infinity; // No message limit for any user
 
   const usage = await (prisma as any).dailyUsage.upsert({
     where: {
@@ -123,7 +123,7 @@ export async function getUsage(userId: string, isPremium: boolean): Promise<Usag
   const aiCount = usage?.aiCount || 0;
   const msgCount = usage?.msgCount || 0;
   const aiLimit = isPremium ? Infinity : env.AI_DAILY_FREE_LIMIT;
-  const msgLimit = isPremium ? Infinity : env.MSG_DAILY_FREE_LIMIT;
+  const msgLimit = Infinity; // No message limit for any user
 
   return {
     aiCount,
@@ -298,25 +298,25 @@ export async function incrementLike(userId: string, isPremium: boolean): Promise
 function getWeekKey(): string {
   const now = new Date();
   const year = now.getUTCFullYear();
-  
+
   // Get the date of the Monday of the current week
   const dayOfWeek = now.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Adjust to Monday
   const monday = new Date(now);
   monday.setUTCDate(now.getUTCDate() + mondayOffset);
   monday.setUTCHours(0, 0, 0, 0);
-  
+
   // Get the first Monday of the year
   const firstMonday = new Date(Date.UTC(year, 0, 1));
   const firstMondayDay = firstMonday.getUTCDay();
   const firstMondayOffset = firstMondayDay === 0 ? 1 : 8 - firstMondayDay;
   firstMonday.setUTCDate(1 + firstMondayOffset);
-  
+
   // Calculate week number
   const diffTime = monday.getTime() - firstMonday.getTime();
   const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
   const week = Math.floor(diffDays / 7) + 1;
-  
+
   return `${year}-W${String(week).padStart(2, "0")}`;
 }
 
@@ -333,7 +333,7 @@ export async function resetWeeklyDirectIfNeeded(userId: string): Promise<void> {
 
   const now = new Date();
   const lastReset = user.lastDirectResetAt;
-  
+
   // Reset if never reset or if we're in a different week
   if (!lastReset) {
     await prisma.user.update({
@@ -348,7 +348,7 @@ export async function resetWeeklyDirectIfNeeded(userId: string): Promise<void> {
 
   const currentWeek = getWeekKey();
   const lastResetWeek = getWeekKeyForDate(lastReset);
-  
+
   if (currentWeek !== lastResetWeek) {
     await prisma.user.update({
       where: { id: userId },
@@ -366,25 +366,25 @@ export async function resetWeeklyDirectIfNeeded(userId: string): Promise<void> {
  */
 function getWeekKeyForDate(date: Date): string {
   const year = date.getUTCFullYear();
-  
+
   // Get the date of the Monday of the week for this date
   const dayOfWeek = date.getUTCDay();
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(date);
   monday.setUTCDate(date.getUTCDate() + mondayOffset);
   monday.setUTCHours(0, 0, 0, 0);
-  
+
   // Get the first Monday of the year
   const firstMonday = new Date(Date.UTC(year, 0, 1));
   const firstMondayDay = firstMonday.getUTCDay();
   const firstMondayOffset = firstMondayDay === 0 ? 1 : 8 - firstMondayDay;
   firstMonday.setUTCDate(1 + firstMondayOffset);
-  
+
   // Calculate week number
   const diffTime = monday.getTime() - firstMonday.getTime();
   const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
   const week = Math.floor(diffDays / 7) + 1;
-  
+
   return `${year}-W${String(week).padStart(2, "0")}`;
 }
 

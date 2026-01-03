@@ -2,11 +2,15 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { authMiddleware } from "../../middleware/auth.js";
-import { BadRequestError, NotFoundError, ConflictError } from "../../lib/httpErrors.js";
+import { BadRequestError, NotFoundError, ConflictError, ForbiddenError } from "../../lib/httpErrors.js";
 import { notifyNewMatch } from "../../lib/notify.js";
 import { StorageService } from "../../lib/storage.js";
+import { canLike, incrementLike } from "../../lib/usage.js";
 
 const router = Router();
+
+// Request expiration time: 24 hours
+const REQUEST_EXPIRATION_HOURS = 24;
 
 // Helper: Get canonical user pair (lower ID first)
 function getCanonicalPair(userId1: string, userId2: string): [string, string] {
@@ -33,16 +37,22 @@ router.get("/incoming", authMiddleware, async (req, res, next) => {
 
     // Parse status query param - default to PENDING, but accept all statuses
     const statusParam = req.query.status as string | undefined;
-    const status = statusParam && ["PENDING", "ACCEPTED", "DECLINED"].includes(statusParam) 
-      ? statusParam 
+    const status = statusParam && ["PENDING", "ACCEPTED", "DECLINED"].includes(statusParam)
+      ? statusParam
       : "PENDING";
 
+    // Calculate expiration cutoff (24 hours ago)
+    const expirationCutoff = new Date();
+    expirationCutoff.setHours(expirationCutoff.getHours() - REQUEST_EXPIRATION_HOURS);
+
     // Get all incoming requests (both LIKE and FAVORITE)
+    // Filter out expired PENDING requests
     const requests = await (prisma as any).conversationRequest.findMany({
       where: {
         toUserId: req.user.id,
         status: status as "PENDING" | "ACCEPTED" | "DECLINED",
-        // No kind filter - show both LIKE and FAVORITE requests
+        // For PENDING requests, only show non-expired ones
+        ...(status === "PENDING" ? { createdAt: { gte: expirationCutoff } } : {}),
       },
       include: {
         fromUser: {
@@ -77,12 +87,17 @@ router.get("/incoming", authMiddleware, async (req, res, next) => {
     const formattedRequests = await Promise.all(
       requests.map(async (r: any) => {
         const photos = await StorageService.transformPhotoUrls(r.fromUser.profile?.photos || [], 3600);
+        // Calculate expiration time (createdAt + 24 hours)
+        const expiresAt = new Date(r.createdAt);
+        expiresAt.setHours(expiresAt.getHours() + REQUEST_EXPIRATION_HOURS);
+
         return {
           requestId: r.id,
           fromUserId: r.fromUserId,
           kind: r.kind,
           status: r.status,
           createdAt: r.createdAt.toISOString(),
+          expiresAt: expiresAt.toISOString(),
           fromUser: {
             userId: r.fromUser.id,
             displayName: r.fromUser.profile?.displayName || "Unknown",
@@ -95,10 +110,10 @@ router.get("/incoming", authMiddleware, async (req, res, next) => {
           },
           firstMessage: r.firstMessage
             ? {
-                id: r.firstMessage.id,
-                text: r.firstMessage.text,
-                createdAt: r.firstMessage.createdAt.toISOString(),
-              }
+              id: r.firstMessage.id,
+              text: r.firstMessage.text,
+              createdAt: r.firstMessage.createdAt.toISOString(),
+            }
             : null,
         };
       })
@@ -180,10 +195,10 @@ router.get("/outgoing", authMiddleware, async (req, res, next) => {
           },
           firstMessage: r.firstMessage
             ? {
-                id: r.firstMessage.id,
-                text: r.firstMessage.text,
-                createdAt: r.firstMessage.createdAt.toISOString(),
-              }
+              id: r.firstMessage.id,
+              text: r.firstMessage.text,
+              createdAt: r.firstMessage.createdAt.toISOString(),
+            }
             : null,
         };
       })
@@ -231,6 +246,36 @@ router.post("/accept", authMiddleware, async (req, res, next) => {
 
     if (request.status !== "PENDING") {
       throw new BadRequestError("Request is not pending");
+    }
+
+    // Check if request is expired (24 hours)
+    const expirationCutoff = new Date();
+    expirationCutoff.setHours(expirationCutoff.getHours() - REQUEST_EXPIRATION_HOURS);
+    if (request.createdAt < expirationCutoff) {
+      // Mark as declined since it expired
+      await (prisma as any).conversationRequest.update({
+        where: { id: request.id },
+        data: { status: "DECLINED" },
+      });
+      throw new BadRequestError("Request has expired");
+    }
+
+    // For LIKE requests, check if user has like limit available
+    // Accepting a LIKE consumes one like from the daily allowance
+    if (request.kind === "LIKE") {
+      // Fetch user's premium status
+      const currentUser = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { isPremium: true },
+      });
+      const isPremium = currentUser?.isPremium || false;
+
+      const likeStatus = await canLike(req.user.id, isPremium);
+      if (!likeStatus.canLike) {
+        throw new ForbiddenError("Daily like limit reached", "LIKE_LIMIT_REACHED");
+      }
+      // Increment like count
+      await incrementLike(req.user.id, isPremium);
     }
 
     // Update request status to ACCEPTED
