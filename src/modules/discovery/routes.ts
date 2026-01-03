@@ -814,7 +814,7 @@ router.post("/favorite", authMiddleware, async (req, res, next) => {
       return res.status(429).json({
         error: {
           code: "DIRECT_LIMIT_REACHED",
-          message: "Daily direct message limit reached. Upgrade to Premium for unlimited direct messages.",
+          message: "Weekly favorite limit reached. Upgrade to Premium or purchase a Favorite Pack for more.",
           requestId: req.id || "unknown",
           details: {
             directUsed: directCheck.directUsed,

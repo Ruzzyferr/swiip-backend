@@ -321,26 +321,26 @@ function getWeekKey(): string {
 }
 
 /**
- * Reset weekly direct messages if needed
+ * Reset weekly favorites if needed
  */
-export async function resetWeeklyDirectIfNeeded(userId: string): Promise<void> {
+export async function resetWeeklyFavoritesIfNeeded(userId: string): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { lastDirectResetAt: true },
+    select: { lastFavoriteResetAt: true },
   });
 
   if (!user) return;
 
   const now = new Date();
-  const lastReset = user.lastDirectResetAt;
+  const lastReset = user.lastFavoriteResetAt;
 
   // Reset if never reset or if we're in a different week
   if (!lastReset) {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        dailyDirectUsed: 0,
-        lastDirectResetAt: new Date(),
+        weeklyFavoritesUsed: 0,
+        lastFavoriteResetAt: new Date(),
       },
     });
     return;
@@ -353,8 +353,8 @@ export async function resetWeeklyDirectIfNeeded(userId: string): Promise<void> {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        dailyDirectUsed: 0,
-        lastDirectResetAt: new Date(),
+        weeklyFavoritesUsed: 0,
+        lastFavoriteResetAt: new Date(),
       },
     });
   }
@@ -388,48 +388,61 @@ function getWeekKeyForDate(date: Date): string {
   return `${year}-W${String(week).padStart(2, "0")}`;
 }
 
+
+
 /**
- * Check if user can send direct message (considering weekly limits)
+ * Check if user can send direct message (considering weekly limits and purchased packs)
  */
 export async function canSendDirect(userId: string, isPremium: boolean): Promise<{
   canSend: boolean;
   directUsed: number;
   directRemaining: number;
   directLimit: number;
+  source?: "WEEKLY" | "PURCHASED";
 }> {
   const env = getEnv();
 
   // Reset if needed
-  await resetWeeklyDirectIfNeeded(userId);
+  await resetWeeklyFavoritesIfNeeded(userId);
 
   // Get current user state
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      dailyDirectUsed: true,
+      weeklyFavoritesUsed: true,
+      purchasedFavorites: true,
     },
   });
 
+  // Default limit: 5 for Premium, 0 for Free (Purchasable only)
+  const weeklyLimit = isPremium ? (env.DIRECT_WEEKLY_PREMIUM_LIMIT || 5) : 0;
+
   if (!user) {
-    const limit = isPremium ? env.DIRECT_WEEKLY_PREMIUM_LIMIT : env.DIRECT_WEEKLY_FREE_LIMIT;
     return {
       canSend: false,
       directUsed: 0,
       directRemaining: 0,
-      directLimit: limit,
+      directLimit: weeklyLimit,
     };
   }
 
-  const directLimit = isPremium ? env.DIRECT_WEEKLY_PREMIUM_LIMIT : env.DIRECT_WEEKLY_FREE_LIMIT;
-  const directUsed = user.dailyDirectUsed;
-  const directRemaining = Math.max(0, directLimit - directUsed);
-  const canSendResult = directUsed < directLimit;
+  const weeklyUsed = user.weeklyFavoritesUsed;
+  const weeklyRemaining = Math.max(0, weeklyLimit - weeklyUsed);
+
+  const purchasedRemaining = user.purchasedFavorites;
+  const totalRemaining = weeklyRemaining + purchasedRemaining;
+
+  // Check where the credit comes from
+  let source: "WEEKLY" | "PURCHASED" | undefined;
+  if (weeklyRemaining > 0) source = "WEEKLY";
+  else if (purchasedRemaining > 0) source = "PURCHASED";
 
   return {
-    canSend: canSendResult,
-    directUsed,
-    directRemaining,
-    directLimit,
+    canSend: totalRemaining > 0,
+    directUsed: weeklyUsed,
+    directRemaining: totalRemaining,
+    directLimit: weeklyLimit + purchasedRemaining, // Total available capacity
+    source
   };
 }
 
@@ -443,37 +456,37 @@ export async function incrementDirect(userId: string, isPremium: boolean): Promi
   directLimit: number;
 }> {
   // Reset if needed
-  await resetWeeklyDirectIfNeeded(userId);
+  await resetWeeklyFavoritesIfNeeded(userId);
 
   // Check before incrementing
   const checkResult = await canSendDirect(userId, isPremium);
-  if (!checkResult.canSend) {
+  if (!checkResult.canSend || !checkResult.source) {
     return checkResult;
   }
 
-  // Increment
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      dailyDirectUsed: {
-        increment: 1,
+  // Deduct from appropriate source
+  if (checkResult.source === "WEEKLY") {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        weeklyFavoritesUsed: {
+          increment: 1,
+        },
       },
-    },
-    select: {
-      dailyDirectUsed: true,
-    },
-  });
+    });
+  } else if (checkResult.source === "PURCHASED") {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        purchasedFavorites: {
+          decrement: 1,
+        },
+      },
+    });
+  }
 
-  const env = getEnv();
-  const directLimit = isPremium ? env.DIRECT_WEEKLY_PREMIUM_LIMIT : env.DIRECT_WEEKLY_FREE_LIMIT;
-  const directRemaining = Math.max(0, directLimit - user.dailyDirectUsed);
-
-  return {
-    canSend: true,
-    directUsed: user.dailyDirectUsed,
-    directRemaining,
-    directLimit,
-  };
+  // Get fresh state to return accurate remaining count
+  return canSendDirect(userId, isPremium);
 }
 
 

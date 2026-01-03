@@ -95,5 +95,90 @@ router.get("/status", authMiddleware, async (req, res, next) => {
   }
 });
 
-export default router;
+/**
+ * POST /api/v1/billing/purchase-boost
+ * Mock endpoint to purchase boosts
+ * Increases user's purchasedBoosts count
+ */
+router.post("/purchase-boost", authMiddleware, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new BadRequestError("User not found");
+    }
 
+    // In a real app, verify receipt with RevenueCat/Apple/Google here
+    // For now, we simulate a successful purchase of "2 Boosts" pack
+
+    // Increment purchased boosts
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        purchasedBoosts: {
+          increment: 2
+        }
+      }
+    });
+
+    // Log the mock purchase
+    await prisma.billingEvent.create({
+      data: {
+        userId: req.user.id,
+        eventType: "mock_boost_purchase",
+        payloadJson: JSON.stringify({ packId: "boost_2_pack", amount: 2 }),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Boosts purchased successfully",
+      purchasedAmount: 2
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/billing/purchase-favorite
+ * Mock endpoint to purchase favorites
+ * Increases user's purchasedFavorites count
+ */
+router.post("/purchase-favorite", authMiddleware, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new BadRequestError("User not found");
+    }
+
+    // In a real app, verify receipt with RevenueCat/Apple/Google here
+    // For now, we simulate a successful purchase of "5 Favorites" pack
+
+    // Increment purchased favorites
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        purchasedFavorites: {
+          increment: 5
+        }
+      }
+    });
+
+    // Log the mock purchase
+    await prisma.billingEvent.create({
+      data: {
+        userId: req.user.id,
+        eventType: "mock_favorite_purchase",
+        payloadJson: JSON.stringify({ packId: "favorite_5_pack", amount: 5 }),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Favorites purchased successfully",
+      purchasedAmount: 5
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+export default router;
