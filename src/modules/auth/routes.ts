@@ -244,7 +244,11 @@ router.post("/verify-code", async (req, res, next) => {
 
     const isValid = await verifyCode(user.id, body.code);
 
-    if (!isValid) {
+    // GOOGLE PLAY / APP STORE REVIEW ACCOUNT
+    // This allows reviewers to log in without receiving actual SMS
+    const isReviewer = normalizedPhone === "+905555555555" && body.code === "123456";
+
+    if (!isValid && !isReviewer) {
       throw new BadRequestError("Invalid or expired verification code");
     }
 

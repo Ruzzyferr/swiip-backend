@@ -76,19 +76,63 @@ export async function verifyCode(
   return true;
 }
 
+import nodemailer from "nodemailer";
+import { getEnv } from "./env.js";
+
+// Create reusable transporter object using the default SMTP transport
+const createTransporter = () => {
+  const env = getEnv();
+  if (!env.SMTP_USER || !env.SMTP_PASS) return null;
+
+  return nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_PORT === 465, // true for 465, false for other ports
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+  });
+};
+
 /**
- * Send verification code (mock implementation - in production use email/SMS service)
+ * Send verification code (Integrates with Nodemailer)
  */
 export async function sendVerificationCode(
   email: string | null,
   phone: string | null,
   code: string
 ): Promise<void> {
-  // In development, just log the code
-  // In production, integrate with email/SMS service
+  const env = getEnv();
+
   if (email) {
     console.log(`📧 Verification code for ${email}: ${code}`);
-    // TODO: Send email via service (SendGrid, AWS SES, etc.)
+
+    // Send real email if SMTP is configured
+    const transporter = createTransporter();
+    if (transporter) {
+      try {
+        await transporter.sendMail({
+          from: env.SMTP_FROM,
+          to: email,
+          subject: "Your Verification Code - Swiip",
+          text: `Your Swiip verification code is: ${code}\n\nIt expires in 5 minutes.`,
+          html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                        <h2 style="color: #6C5CE7;">Swiip Verification</h2>
+                        <p>Your verification code is:</p>
+                        <h1 style="font-size: 32px; letter-spacing: 5px; color: #333;">${code}</h1>
+                        <p>This code will expire in 5 minutes.</p>
+                        <p style="font-size: 12px; color: #999; margin-top: 20px;">If you didn't request this code, you can ignore this email.</p>
+                    </div>
+                `
+        });
+        console.log(`✅ Email sent successfully to ${email}`);
+      } catch (error) {
+        console.error("❌ Failed to send email:", error);
+      }
+    }
+
   } else if (phone) {
     console.log(`📱 Verification code for ${phone}: ${code}`);
     // TODO: Send SMS via service (Twilio, AWS SNS, etc.)

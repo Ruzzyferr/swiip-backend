@@ -25,7 +25,14 @@ const envSchema = z.object({
   S3_BUCKET: z.string().optional(),
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),
+  S3_SECRET_KEY: z.string().optional(),
   S3_PUBLIC_URL: z.string().url().optional(), // Optional custom public URL
+  // Email Configuration (SMTP)
+  SMTP_HOST: z.string().default("smtp.gmail.com"),
+  SMTP_PORT: z.coerce.number().int().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default("Swiip <info@swiip.com>"),
 }).refine((data) => {
   // Only enforce API key in production
   if (data.NODE_ENV === "production") {
