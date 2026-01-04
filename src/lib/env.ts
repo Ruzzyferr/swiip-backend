@@ -25,7 +25,6 @@ const envSchema = z.object({
   S3_BUCKET: z.string().optional(),
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),
-  S3_SECRET_KEY: z.string().optional(),
   S3_PUBLIC_URL: z.string().url().optional(), // Optional custom public URL
   // Email Configuration (SMTP)
   SMTP_HOST: z.string().default("smtp.gmail.com"),
