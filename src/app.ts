@@ -26,6 +26,8 @@ export function createApp(): Express {
 
   // Serve uploaded files
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+  // Serve public static files (Privacy Policy, terms, etc.)
+  app.use("/public", express.static(path.join(process.cwd(), "public")));
 
   // Request ID middleware (must be early)
   app.use(requestIdMiddleware);
