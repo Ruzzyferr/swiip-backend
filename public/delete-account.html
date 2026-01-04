@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Delete Account - Swiip</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            color: #e74c3c;
+        }
+
+        .method {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+        }
+
+        .email-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Request Account Deletion</h1>
+    <p>We respect your privacy. If you wish to delete your Swiip account and permanently remove all your data, you can
+        do so using one of the following methods:</p>
+
+    <div class="method">
+        <h3>📱 Method 1: In-App (Recommended)</h3>
+        <p>This is the fastest way to delete your data.</p>
+        <ol>
+            <li>Open the <strong>Swiip</strong> app.</li>
+            <li>Go to your <strong>Profile</strong> tab.</li>
+            <li>Tap on <strong>Settings</strong> (Gear Icon).</li>
+            <li>Scroll down and tap <strong>Delete Account</strong>.</li>
+            <li>Confirm your choice. Your data will be deleted immediately.</li>
+        </ol>
+    </div>
+
+    <div class="method">
+        <h3>📧 Method 2: Web Request</h3>
+        <p>If you cannot access the app, you can request deletion here.</p>
+
+        <form id="deleteForm" onsubmit="submitDeletion(event)">
+            <input type="email" id="email" placeholder="Enter your registered email" required
+                style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ddd;">
+            <button type="submit"
+                style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">submit
+                Deletion Request</button>
+        </form>
+        <p id="statusMessage" style="margin-top: 10px; font-weight: bold;"></p>
+
+        <script>
+            async function submitDeletion(e) {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const status = document.getElementById('statusMessage');
+                const btn = e.target.querySelector('button');
+
+                btn.disabled = true;
+                btn.innerText = "Sending...";
+                status.innerText = "";
+
+                try {
+                    const res = await fetch('/api/v1/auth/request-deletion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+
+                    if (res.ok) {
+                        status.style.color = 'green';
+                        status.innerText = "✅ Request sent! We will process it within 7 days.";
+                        e.target.reset();
+                    } else {
+                        throw new Error("Failed");
+                    }
+                } catch (err) {
+                    status.style.color = 'red';
+                    status.innerText = "❌ Error submitting request. Please email info@swiip.com directly.";
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = "Submit Deletion Request";
+                }
+            }
+        </script>
+    </div>
+
+    <p style="font-size: 0.9em; color: #666; margin-top: 40px;">
+        <strong>Data Retention:</strong> Once processed, all your personal data including messages, matches, and profile
+        photos will be permanently removed from our servers.
+    </p>
+</body>
+
+</html>
