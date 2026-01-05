@@ -361,7 +361,7 @@ router.post("/request-deletion", async (req, res, next) => {
 
     // Send email to admin
     // In a real app, verifying ownership is better, but for "Request" this is okay.
-    await import("../../lib/verification").then(m =>
+    await import("../../lib/verification.js").then(m =>
       m.sendVerificationCode(`info@swiip.com`, null, `DELETION REQUEST: ${email || phone}`)
     );
 
