@@ -2,13 +2,24 @@
 set -e
 
 echo "🚀 Starting Swiip Backend..."
+echo "📋 DATABASE_URL set: ${DATABASE_URL:+yes}"
 
 # Extract DB_HOST and DB_PORT from DATABASE_URL if not explicitly set
 if [ -z "$DB_HOST" ] && [ -n "$DATABASE_URL" ]; then
-  # Parse DATABASE_URL: postgresql://user:pass@host:port/db
-  DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|.*@([^:/]+).*|\1|')
-  DB_PORT=$(echo "$DATABASE_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')
-  echo "📋 Parsed from DATABASE_URL - Host: $DB_HOST, Port: $DB_PORT"
+  # Remove protocol prefix (postgresql://)
+  DB_TEMP="${DATABASE_URL#*@}"
+  # Extract host (everything before :port or /db)
+  DB_HOST="${DB_TEMP%%:*}"
+  # If host contains /, extract before /
+  DB_HOST="${DB_HOST%%/*}"
+  # Extract port (between : and /)
+  DB_PORT_TEMP="${DB_TEMP#*:}"
+  DB_PORT="${DB_PORT_TEMP%%/*}"
+  # Validate port is numeric
+  case "$DB_PORT" in
+    ''|*[!0-9]*) DB_PORT=5432 ;;
+  esac
+  echo "📋 Parsed - Host: $DB_HOST, Port: $DB_PORT"
 fi
 
 # Use defaults if still not set
