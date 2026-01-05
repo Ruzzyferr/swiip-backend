@@ -54,6 +54,9 @@ RUN pnpm prisma generate
 # Copy built application
 COPY --from=builder /app/dist ./dist
 
+# Copy public static files
+COPY --from=builder /app/public ./public
+
 # Copy startup script
 COPY scripts/docker-start.sh ./scripts/docker-start.sh
 RUN chmod +x ./scripts/docker-start.sh
