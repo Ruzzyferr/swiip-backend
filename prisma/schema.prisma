@@ -193,9 +193,10 @@ model Message {
   id               String   @id @default(cuid())
   conversationId   String?
   senderUserId     String
-  text             String   @db.VarChar(2000)
+  text             String   @db.VarChar(8000)
   audioUrl         String?
   isRequestMessage Boolean  @default(false)
+  isRead           Boolean  @default(false)
   requestId        String?
   createdAt        DateTime @default(now())
 
@@ -207,6 +208,7 @@ model Message {
   @@index([senderUserId])
   @@index([createdAt])
   @@index([requestId])
+  @@index([isRead])
 }
 
 model DailyUsage {

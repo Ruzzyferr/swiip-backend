@@ -14,7 +14,60 @@ import { StorageService } from "../../lib/storage.js";
 const router = Router();
 
 const sendMessageSchema = z.object({
-  text: z.string().min(1).max(2000),
+  // Increased to 8000 to account for emoji surrogate pairs (each emoji can be 2-8+ code units)
+  text: z.string().min(1).max(8000),
+});
+
+// Get total unread message count across all conversations
+router.get("/unread-count", authMiddleware, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new BadRequestError("User not found");
+    }
+
+    const userId = req.user.id;
+
+    // Get all conversation IDs where user is a participant
+    const matches = await (prisma as any).match.findMany({
+      where: {
+        OR: [{ userAId: userId }, { userBId: userId }],
+      },
+      select: {
+        conversation: {
+          select: { id: true },
+        },
+      },
+    });
+
+    const favoriteConversations = await (prisma as any).conversation.findMany({
+      where: {
+        requestId: { not: null },
+        request: {
+          OR: [{ fromUserId: userId }, { toUserId: userId }],
+          status: "ACCEPTED",
+        },
+      },
+      select: { id: true },
+    });
+
+    const conversationIds = [
+      ...matches.filter((m: any) => m.conversation).map((m: any) => m.conversation.id),
+      ...favoriteConversations.map((c: any) => c.id),
+    ];
+
+    // Count unread messages (not sent by current user)
+    const unreadCount = await (prisma as any).message.count({
+      where: {
+        conversationId: { in: conversationIds },
+        senderUserId: { not: userId },
+        isRead: false,
+      },
+    });
+
+    res.json({ unreadCount });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get("/conversations", authMiddleware, async (req, res, next) => {
@@ -56,6 +109,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
                 audioUrl: true,
                 createdAt: true,
                 senderUserId: true,
+                isRead: true,
               }
             }
           },
@@ -104,6 +158,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
             audioUrl: true,
             createdAt: true,
             senderUserId: true,
+            isRead: true,
           }
         }
       },
@@ -123,6 +178,15 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
           }
 
           const lastMessage = match.conversation.messages[0] || null;
+
+          // Count unread messages in this conversation (messages from other user that are not read)
+          const unreadCount = await (prisma as any).message.count({
+            where: {
+              conversationId: match.conversation.id,
+              senderUserId: { not: userId },
+              isRead: false,
+            },
+          });
 
           // Transform photo URLs to presigned URLs
           const photos = await StorageService.transformPhotoUrls(otherProfile.photos, 3600);
@@ -145,6 +209,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
               createdAt: lastMessage.createdAt.toISOString(),
               senderUserId: lastMessage.senderUserId,
             } : null,
+            unreadCount,
           };
         })
     );
@@ -172,6 +237,15 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
           };
         }
 
+        // Count unread messages in this conversation
+        const unreadCount = await (prisma as any).message.count({
+          where: {
+            conversationId: conv.id,
+            senderUserId: { not: userId },
+            isRead: false,
+          },
+        });
+
         // Transform photo URLs to presigned URLs
         const photos = await StorageService.transformPhotoUrls(otherProfile.photos, 3600);
 
@@ -193,6 +267,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
             createdAt: new Date(lastMessage.createdAt).toISOString(),
             senderUserId: lastMessage.senderUserId,
           } : null,
+          unreadCount,
         };
       })
     );
@@ -468,11 +543,78 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
         audioUrl: msg.audioUrl 
           ? await StorageService.transformAudioUrl(msg.audioUrl, 3600)
           : null,
+        isRead: msg.isRead,
         createdAt: msg.createdAt.toISOString(),
       }))
     );
 
     res.json(messagesWithPresignedUrls);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Mark messages as read in a conversation
+router.post("/conversations/:conversationId/read", authMiddleware, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new BadRequestError("User not found");
+    }
+
+    const conversationId = req.params.conversationId;
+    const userId = req.user.id;
+
+    // Verify user has access to this conversation
+    const conversation = await (prisma as any).conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        match: {
+          select: {
+            userAId: true,
+            userBId: true,
+          },
+        },
+        request: {
+          select: {
+            fromUserId: true,
+            toUserId: true,
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundError("Conversation not found");
+    }
+
+    // Check if user is part of this conversation
+    let hasAccess = false;
+    if (conversation.match) {
+      hasAccess = conversation.match.userAId === userId || conversation.match.userBId === userId;
+    } else if (conversation.request) {
+      hasAccess = conversation.request.fromUserId === userId || conversation.request.toUserId === userId;
+    }
+
+    if (!hasAccess) {
+      throw new ForbiddenError("Access denied to this conversation");
+    }
+
+    // Mark all messages from other users as read
+    const result = await (prisma as any).message.updateMany({
+      where: {
+        conversationId,
+        senderUserId: { not: userId },
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+      },
+    });
+
+    res.json({ 
+      success: true, 
+      markedAsRead: result.count 
+    });
   } catch (error) {
     next(error);
   }
