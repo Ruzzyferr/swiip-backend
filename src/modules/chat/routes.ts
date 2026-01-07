@@ -6,6 +6,7 @@ import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, NotFoundError, ForbiddenError, PaymentRequiredError } from "../../lib/httpErrors.js";
 import { incrementMSG } from "../../lib/usage.js";
 import { notifyNewMessage } from "../../lib/notify.js";
+import { emitNewMessage } from "../../lib/socket.js";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import fs from "fs/promises";
@@ -203,7 +204,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
             createdAt: match.conversation.createdAt.toISOString(),
             lastMessage: lastMessage ? {
               text: lastMessage.text,
-              audioUrl: lastMessage.audioUrl 
+              audioUrl: lastMessage.audioUrl
                 ? await StorageService.transformAudioUrl(lastMessage.audioUrl, 3600)
                 : null,
               createdAt: lastMessage.createdAt.toISOString(),
@@ -261,7 +262,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
           createdAt: conv.createdAt.toISOString(),
           lastMessage: lastMessage ? {
             text: lastMessage.text,
-            audioUrl: lastMessage.audioUrl 
+            audioUrl: lastMessage.audioUrl
               ? await StorageService.transformAudioUrl(lastMessage.audioUrl, 3600)
               : null,
             createdAt: new Date(lastMessage.createdAt).toISOString(),
@@ -540,7 +541,7 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
         conversationId: msg.conversationId,
         senderUserId: msg.senderUserId,
         text: msg.text,
-        audioUrl: msg.audioUrl 
+        audioUrl: msg.audioUrl
           ? await StorageService.transformAudioUrl(msg.audioUrl, 3600)
           : null,
         isRead: msg.isRead,
@@ -611,9 +612,9 @@ router.post("/conversations/:conversationId/read", authMiddleware, async (req, r
       },
     });
 
-    res.json({ 
-      success: true, 
-      markedAsRead: result.count 
+    res.json({
+      success: true,
+      markedAsRead: result.count
     });
   } catch (error) {
     next(error);
@@ -794,8 +795,18 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
     });
 
     if (senderProfile) {
-      await notifyNewMessage(otherUserId, senderProfile.displayName);
+      await notifyNewMessage(otherUserId, senderProfile.displayName, body.text);
     }
+
+    // Emit via WebSocket for real-time delivery
+    emitNewMessage(conversationId, {
+      id: message.id,
+      conversationId: message.conversationId,
+      senderUserId: message.senderUserId,
+      text: message.text,
+      audioUrl: null,
+      createdAt: message.createdAt.toISOString(),
+    });
 
     res.status(201).json({
       id: message.id,
@@ -971,8 +982,18 @@ router.post(
       });
 
       if (senderProfile) {
-        await notifyNewMessage(otherUserId, senderProfile.displayName);
+        await notifyNewMessage(otherUserId, senderProfile.displayName, "🎤 Sesli mesaj");
       }
+
+      // Emit via WebSocket for real-time delivery
+      emitNewMessage(conversationId, {
+        id: message.id,
+        conversationId: message.conversationId,
+        senderUserId: message.senderUserId,
+        text: message.text,
+        audioUrl: presignedAudioUrl,
+        createdAt: message.createdAt.toISOString(),
+      });
 
       res.json({
         id: message.id,
@@ -1191,7 +1212,8 @@ router.post("/requests/:requestId/reply", authMiddleware, async (req, res, next)
     if (currentUserProfile) {
       await notifyNewMessage(
         request.fromUserId,
-        currentUserProfile.displayName
+        currentUserProfile.displayName,
+        body.text
       );
     }
 

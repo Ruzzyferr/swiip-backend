@@ -5,6 +5,7 @@ import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, ConflictError, NotFoundError, PaymentRequiredError } from "../../lib/httpErrors.js";
 import { calculateDistanceKm, EU_COUNTRIES } from "../../lib/distance.js";
 import { notifyNewMatch } from "../../lib/notify.js";
+import { emitNewLike, emitNewMatch, emitNewChatRequest } from "../../lib/socket.js";
 import { canLike, incrementLike, canSendDirect, incrementDirect } from "../../lib/usage.js";
 import { StorageService } from "../../lib/storage.js";
 
@@ -694,6 +695,30 @@ router.post("/like", authMiddleware, async (req, res, next) => {
       if (targetUserProfile && currentUserProfile) {
         await notifyNewMatch(body.toUserId, currentUserProfile.displayName);
         await notifyNewMatch(req.user.id, targetUserProfile.displayName);
+
+        // Emit real-time match notification to both users
+        const currentUserPhotos = await prisma.profile.findUnique({
+          where: { userId: req.user.id },
+          select: { photos: true },
+        });
+        emitNewMatch(body.toUserId, req.user.id, {
+          matchId: matchId!,
+          conversationId: conversationId!,
+          otherUser: {
+            userId: req.user.id,
+            displayName: currentUserProfile.displayName,
+            photos: currentUserPhotos?.photos || [],
+          },
+        });
+        emitNewMatch(req.user.id, body.toUserId, {
+          matchId: matchId!,
+          conversationId: conversationId!,
+          otherUser: {
+            userId: body.toUserId,
+            displayName: targetUserProfile.displayName,
+            photos: targetUserProfile.photos || [],
+          },
+        });
       }
 
       return res.json({
@@ -725,6 +750,20 @@ router.post("/like", authMiddleware, async (req, res, next) => {
     });
 
     requestId = request.id;
+
+    // Emit real-time like notification
+    const fromUserProfile = await prisma.profile.findUnique({
+      where: { userId: req.user.id },
+      select: { displayName: true, photos: true },
+    });
+    if (fromUserProfile) {
+      emitNewLike(body.toUserId, {
+        fromUserId: req.user.id,
+        fromUserName: fromUserProfile.displayName,
+        fromUserPhoto: fromUserProfile.photos?.[0],
+        isMatch: false,
+      });
+    }
 
     res.json({
       success: true,
@@ -915,6 +954,26 @@ router.post("/favorite", authMiddleware, async (req, res, next) => {
       messageId: firstMessage.id,
       directRemaining: directResult.directRemaining,
     });
+
+    // Emit real-time chat request notification (FAVORITE with message)
+    const fromUser = await prisma.profile.findUnique({
+      where: { userId: req.user.id },
+      select: { displayName: true, photos: true },
+    });
+    if (fromUser) {
+      emitNewChatRequest(body.toUserId, {
+        requestId: request.id,
+        fromUser: {
+          userId: req.user.id,
+          displayName: fromUser.displayName,
+          photos: fromUser.photos || [],
+        },
+        firstMessage: {
+          text: body.text,
+          createdAt: firstMessage.createdAt.toISOString(),
+        },
+      });
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       next(new BadRequestError(error.issues[0]?.message || "Validation error"));

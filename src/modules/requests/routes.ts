@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError, NotFoundError, ConflictError, ForbiddenError } from "../../lib/httpErrors.js";
 import { notifyNewMatch } from "../../lib/notify.js";
+import { emitNewMatch } from "../../lib/socket.js";
 import { StorageService } from "../../lib/storage.js";
 import { canLike, incrementLike } from "../../lib/usage.js";
 
@@ -370,6 +371,30 @@ router.post("/accept", authMiddleware, async (req, res, next) => {
       if (otherUserProfile && currentUserProfile) {
         await notifyNewMatch(body.fromUserId, currentUserProfile.displayName);
         await notifyNewMatch(req.user.id, otherUserProfile.displayName);
+
+        // Emit real-time match notification to both users
+        const currentUserPhotos = await prisma.profile.findUnique({
+          where: { userId: req.user.id },
+          select: { photos: true },
+        });
+        emitNewMatch(body.fromUserId, req.user.id, {
+          matchId: matchId!,
+          conversationId: conversationId!,
+          otherUser: {
+            userId: req.user.id,
+            displayName: currentUserProfile.displayName,
+            photos: currentUserPhotos?.photos || [],
+          },
+        });
+        emitNewMatch(req.user.id, body.fromUserId, {
+          matchId: matchId!,
+          conversationId: conversationId!,
+          otherUser: {
+            userId: body.fromUserId,
+            displayName: otherUserProfile.displayName,
+            photos: otherUserProfile.photos || [],
+          },
+        });
       }
     } else if (request.kind === "FAVORITE") {
       // For FAVORITE, create conversation directly (no match needed)
