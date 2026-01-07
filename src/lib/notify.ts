@@ -1,4 +1,4 @@
-import Expo, { ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
+import { Expo, ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
 import { prisma } from "./prisma.js";
 import { logger } from "./logger.js";
 
