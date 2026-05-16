@@ -526,6 +526,7 @@ router.get("/feed", authMiddleware, async (req, res, next) => {
             photos: photos,
             languagesNative: profile.languagesNative,
             languagesPractice: profile.languagesPractice,
+            createdAt: profile.createdAt.toISOString(),
           },
         };
       })

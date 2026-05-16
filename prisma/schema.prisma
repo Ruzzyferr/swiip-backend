@@ -209,6 +209,9 @@ model Message {
   @@index([createdAt])
   @@index([requestId])
   @@index([isRead])
+  // Composite index for "fetch latest messages per conversation in chronological order"
+  // (chat list last-message preview, conversation detail pagination).
+  @@index([conversationId, createdAt])
 }
 
 model DailyUsage {

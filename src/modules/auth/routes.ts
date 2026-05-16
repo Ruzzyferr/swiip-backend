@@ -6,6 +6,7 @@ import { authMiddleware } from "../../middleware/auth.js";
 import { BadRequestError } from "../../lib/httpErrors.js";
 import { createVerificationCode, verifyCode, sendVerificationCode } from "../../lib/verification.js";
 import { generateReferralCode } from "../../lib/referral.js";
+import { getEnv } from "../../lib/env.js";
 
 const router = Router();
 
@@ -245,9 +246,23 @@ router.post("/verify-code", async (req, res, next) => {
     const isValid = await verifyCode(user.id, body.code);
 
     // GOOGLE PLAY / APP STORE REVIEW ACCOUNT
-    // This allows reviewers to log in without receiving actual SMS/Email
-    const isReviewerPhone = normalizedPhone === "+905555555555" && body.code === "123456";
-    const isReviewerEmail = normalizedEmail === "test@swiip.com" && body.code === "123456";
+    // Configure REVIEWER_PHONE / REVIEWER_EMAIL / REVIEWER_CODE in env to enable.
+    // Disabled automatically when REVIEWER_CODE is missing.
+    const env = getEnv();
+    const reviewerPhone = env.REVIEWER_PHONE?.trim();
+    const reviewerEmail = env.REVIEWER_EMAIL?.trim().toLowerCase();
+    const reviewerCode = env.REVIEWER_CODE?.trim();
+    const reviewerBypassEnabled = Boolean(reviewerCode && (reviewerPhone || reviewerEmail));
+    const isReviewerPhone =
+      reviewerBypassEnabled &&
+      !!reviewerPhone &&
+      normalizedPhone === reviewerPhone &&
+      body.code === reviewerCode;
+    const isReviewerEmail =
+      reviewerBypassEnabled &&
+      !!reviewerEmail &&
+      normalizedEmail === reviewerEmail &&
+      body.code === reviewerCode;
 
     if (!isValid && !isReviewerPhone && !isReviewerEmail) {
       throw new BadRequestError("Invalid or expired verification code");

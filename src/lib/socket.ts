@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io";
 import { prisma } from "./prisma.js";
 import { logger } from "./logger.js";
 import { hashSessionToken } from "./session.js";
+import { socketCorsOrigin } from "./cors.js";
 
 // Store active connections: userId -> Set of socket IDs
 const userSockets = new Map<string, Set<string>>();
@@ -18,7 +19,7 @@ let io: Server | null = null;
 export function initSocketServer(httpServer: HttpServer): Server {
     io = new Server(httpServer, {
         cors: {
-            origin: "*", // In production, restrict this
+            origin: socketCorsOrigin(),
             methods: ["GET", "POST"],
             credentials: true,
         },

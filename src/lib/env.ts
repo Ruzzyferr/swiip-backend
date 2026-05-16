@@ -32,6 +32,12 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default("Swiip <info@swiip.com>"),
+  // CORS / Socket.IO allowed origins (comma-separated). Empty in dev = allow all.
+  ALLOWED_ORIGINS: z.string().optional(),
+  // Google Play / App Store reviewer bypass for verify-code (all three required to enable).
+  REVIEWER_PHONE: z.string().optional(),
+  REVIEWER_EMAIL: z.string().optional(),
+  REVIEWER_CODE: z.string().optional(),
 }).refine((data) => {
   // Only enforce API key in production
   if (data.NODE_ENV === "production") {

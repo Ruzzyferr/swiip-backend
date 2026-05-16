@@ -9,6 +9,7 @@ import { requestIdMiddleware } from "./middleware/requestId.js";
 import { rateLimiterMiddleware } from "./middleware/rateLimiter.js";
 import { HttpError } from "./lib/httpErrors.js";
 import { logger } from "./lib/logger.js";
+import { corsOriginValidator } from "./lib/cors.js";
 
 export function createApp(): Express {
   const app = express();
@@ -18,7 +19,7 @@ export function createApp(): Express {
 
   // Security middleware
   app.use(helmet());
-  app.use(cors({ origin: true, credentials: true }));
+  app.use(cors({ origin: corsOriginValidator, credentials: true }));
 
   // Body parsing
   app.use(express.json({ limit: "1mb" }));
