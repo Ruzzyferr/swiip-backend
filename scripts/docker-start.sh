@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "🚀 Starting Swiip Backend..."
+echo "🚀 Starting Conversa Backend..."
 echo "📋 DATABASE_URL set: ${DATABASE_URL:+yes}"
 
 # Extract DB_HOST and DB_PORT from DATABASE_URL if not explicitly set

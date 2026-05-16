@@ -7,12 +7,12 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: swiip-postgres-prod
+    container_name: conversa-postgres-prod
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password is required}
-      POSTGRES_DB: ${DB_NAME:-swiip}
+      POSTGRES_DB: ${DB_NAME:-conversa}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -28,7 +28,7 @@ services:
   # MinIO S3-Compatible Storage
   minio:
     image: minio/minio
-    container_name: swiip-minio-prod
+    container_name: conversa-minio-prod
     restart: always
     command: server /data --console-address ":9001"
     environment:
@@ -52,7 +52,7 @@ services:
   # MinIO Bucket Initialization
   minio-init:
     image: minio/mc
-    container_name: swiip-minio-init-prod
+    container_name: conversa-minio-init-prod
     depends_on:
       minio:
         condition: service_healthy
@@ -60,14 +60,14 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     entrypoint: >
-      /bin/sh -c " mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; mc mb myminio/swiip-photos --ignore-existing; mc anonymous set download myminio/swiip-photos; echo 'Bucket swiip-photos created and configured!'; exit 0; "
+      /bin/sh -c " mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; mc mb myminio/conversa-photos --ignore-existing; mc anonymous set download myminio/conversa-photos; echo 'Bucket conversa-photos created and configured!'; exit 0; "
 
   # Backend Application
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: swiip-backend-prod
+    container_name: conversa-backend-prod
     restart: always
     depends_on:
       postgres:
@@ -82,15 +82,15 @@ services:
       # Database
       DB_HOST: postgres
       DB_PORT: 5432
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-swiip}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-conversa}
 
       # MinIO / S3
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1
-      S3_BUCKET: swiip-photos
+      S3_BUCKET: conversa-photos
       S3_ACCESS_KEY: ${MINIO_ROOT_USER}
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://localhost:9000/swiip-photos}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://localhost:9000/conversa-photos}
 
       # AI Configuration
       AI_PROVIDER: ${AI_PROVIDER:-openrouter}

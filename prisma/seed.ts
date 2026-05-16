@@ -141,7 +141,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "alex@swiip.com" },
+        where: { email: "alex@conversa.app" },
         update: {
           profile: {
             update: {
@@ -150,7 +150,7 @@ async function main() {
           }
         },
         create: {
-          email: "alex@swiip.com",
+          email: "alex@conversa.app",
           phone: "+905551234567",
           isPremium: false,
           premiumSource: "stripe",
@@ -193,7 +193,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "maria@swiip.com" },
+        where: { email: "maria@conversa.app" },
         update: {
           profile: {
             update: {
@@ -202,7 +202,7 @@ async function main() {
           }
         },
         create: {
-          email: "maria@swiip.com",
+          email: "maria@conversa.app",
           phone: "+905551234568",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -245,7 +245,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "john@swiip.com" },
+        where: { email: "john@conversa.app" },
         update: {
           profile: {
             update: {
@@ -254,7 +254,7 @@ async function main() {
           }
         },
         create: {
-          email: "john@swiip.com",
+          email: "john@conversa.app",
           phone: "+905551234569",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 1 * 60 * 60 * 1000), // 1 hour ago
@@ -293,7 +293,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "sophie@swiip.com" },
+        where: { email: "sophie@conversa.app" },
         update: {
           profile: {
             update: {
@@ -302,7 +302,7 @@ async function main() {
           }
         },
         create: {
-          email: "sophie@swiip.com",
+          email: "sophie@conversa.app",
           phone: "+905551234570",
           isPremium: true,
           premiumSource: "admin",
@@ -343,7 +343,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "david@swiip.com" },
+        where: { email: "david@conversa.app" },
         update: {
           profile: {
             update: {
@@ -352,7 +352,7 @@ async function main() {
           }
         },
         create: {
-          email: "david@swiip.com",
+          email: "david@conversa.app",
           phone: "+905551234571",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 45 * 60 * 1000),
@@ -391,7 +391,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "lisa@swiip.com" },
+        where: { email: "lisa@conversa.app" },
         update: {
           profile: {
             update: {
@@ -400,7 +400,7 @@ async function main() {
           }
         },
         create: {
-          email: "lisa@swiip.com",
+          email: "lisa@conversa.app",
           phone: "+905551234572",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 20 * 60 * 1000),
@@ -439,7 +439,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "michael@swiip.com" },
+        where: { email: "michael@conversa.app" },
         update: {
           profile: {
             update: {
@@ -448,7 +448,7 @@ async function main() {
           }
         },
         create: {
-          email: "michael@swiip.com",
+          email: "michael@conversa.app",
           phone: "+905551234573",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 5 * 60 * 1000),
@@ -487,7 +487,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "emma@swiip.com" },
+        where: { email: "emma@conversa.app" },
         update: {
           profile: {
             update: {
@@ -496,7 +496,7 @@ async function main() {
           }
         },
         create: {
-          email: "emma@swiip.com",
+          email: "emma@conversa.app",
           phone: "+905551234574",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago (inactive)
@@ -535,7 +535,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "tom@swiip.com" },
+        where: { email: "tom@conversa.app" },
         update: {
           profile: {
             update: {
@@ -544,7 +544,7 @@ async function main() {
           }
         },
         create: {
-          email: "tom@swiip.com",
+          email: "tom@conversa.app",
           phone: "+905551234575",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 10 * 60 * 1000),
@@ -584,7 +584,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "sarah@swiip.com" },
+        where: { email: "sarah@conversa.app" },
         update: {
           profile: {
             update: {
@@ -593,7 +593,7 @@ async function main() {
           }
         },
         create: {
-          email: "sarah@swiip.com",
+          email: "sarah@conversa.app",
           phone: "+905551234576",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -635,7 +635,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "lena@swiip.com" },
+        where: { email: "lena@conversa.app" },
         update: {
           profile: {
             update: {
@@ -644,7 +644,7 @@ async function main() {
           }
         },
         create: {
-          email: "lena@swiip.com",
+          email: "lena@conversa.app",
           phone: "+905551234577",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 20 * 60 * 1000),
@@ -683,7 +683,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "kerem@swiip.com" },
+        where: { email: "kerem@conversa.app" },
         update: {
           profile: {
             update: {
@@ -692,7 +692,7 @@ async function main() {
           }
         },
         create: {
-          email: "kerem@swiip.com",
+          email: "kerem@conversa.app",
           phone: "+905551234578",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 45 * 60 * 1000),
@@ -731,7 +731,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "yuki@swiip.com" },
+        where: { email: "yuki@conversa.app" },
         update: {
           profile: {
             update: {
@@ -740,7 +740,7 @@ async function main() {
           }
         },
         create: {
-          email: "yuki@swiip.com",
+          email: "yuki@conversa.app",
           phone: "+905551234579",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -782,7 +782,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "carlos@swiip.com" },
+        where: { email: "carlos@conversa.app" },
         update: {
           profile: {
             update: {
@@ -791,7 +791,7 @@ async function main() {
           }
         },
         create: {
-          email: "carlos@swiip.com",
+          email: "carlos@conversa.app",
           phone: "+905551234580",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
@@ -830,7 +830,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "zeynep@swiip.com" },
+        where: { email: "zeynep@conversa.app" },
         update: {
           profile: {
             update: {
@@ -839,7 +839,7 @@ async function main() {
           }
         },
         create: {
-          email: "zeynep@swiip.com",
+          email: "zeynep@conversa.app",
           phone: "+905551234581",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 35 * 60 * 1000),
@@ -878,7 +878,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "marco@swiip.com" },
+        where: { email: "marco@conversa.app" },
         update: {
           profile: {
             update: {
@@ -887,7 +887,7 @@ async function main() {
           }
         },
         create: {
-          email: "marco@swiip.com",
+          email: "marco@conversa.app",
           phone: "+905551234582",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -929,7 +929,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "anna@swiip.com" },
+        where: { email: "anna@conversa.app" },
         update: {
           profile: {
             update: {
@@ -938,7 +938,7 @@ async function main() {
           }
         },
         create: {
-          email: "anna@swiip.com",
+          email: "anna@conversa.app",
           phone: "+905551234583",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 1 * 60 * 60 * 1000),
@@ -977,7 +977,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "burak@swiip.com" },
+        where: { email: "burak@conversa.app" },
         update: {
           profile: {
             update: {
@@ -986,7 +986,7 @@ async function main() {
           }
         },
         create: {
-          email: "burak@swiip.com",
+          email: "burak@conversa.app",
           phone: "+905551234584",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 25 * 60 * 1000),
@@ -1025,7 +1025,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "olivia@swiip.com" },
+        where: { email: "olivia@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1034,7 +1034,7 @@ async function main() {
           }
         },
         create: {
-          email: "olivia@swiip.com",
+          email: "olivia@conversa.app",
           phone: "+905551234585",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -1076,7 +1076,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "ahmet@swiip.com" },
+        where: { email: "ahmet@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1085,7 +1085,7 @@ async function main() {
           }
         },
         create: {
-          email: "ahmet@swiip.com",
+          email: "ahmet@conversa.app",
           phone: "+905551234586",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 55 * 60 * 1000),
@@ -1124,7 +1124,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "sofia@swiip.com" },
+        where: { email: "sofia@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1133,7 +1133,7 @@ async function main() {
           }
         },
         create: {
-          email: "sofia@swiip.com",
+          email: "sofia@conversa.app",
           phone: "+905551234587",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 15 * 60 * 1000),
@@ -1172,7 +1172,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "mert@swiip.com" },
+        where: { email: "mert@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1181,7 +1181,7 @@ async function main() {
           }
         },
         create: {
-          email: "mert@swiip.com",
+          email: "mert@conversa.app",
           phone: "+905551234588",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -1223,7 +1223,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "clara@swiip.com" },
+        where: { email: "clara@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1232,7 +1232,7 @@ async function main() {
           }
         },
         create: {
-          email: "clara@swiip.com",
+          email: "clara@conversa.app",
           phone: "+905551234589",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 40 * 60 * 1000),
@@ -1271,7 +1271,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "can@swiip.com" },
+        where: { email: "can@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1280,7 +1280,7 @@ async function main() {
           }
         },
         create: {
-          email: "can@swiip.com",
+          email: "can@conversa.app",
           phone: "+905551234590",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 70 * 60 * 1000),
@@ -1319,7 +1319,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "nina@swiip.com" },
+        where: { email: "nina@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1328,7 +1328,7 @@ async function main() {
           }
         },
         create: {
-          email: "nina@swiip.com",
+          email: "nina@conversa.app",
           phone: "+905551234591",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -1370,7 +1370,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "deniz@swiip.com" },
+        where: { email: "deniz@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1379,7 +1379,7 @@ async function main() {
           }
         },
         create: {
-          email: "deniz@swiip.com",
+          email: "deniz@conversa.app",
           phone: "+905551234592",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 90 * 60 * 1000),
@@ -1418,7 +1418,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "james@swiip.com" },
+        where: { email: "james@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1427,7 +1427,7 @@ async function main() {
           }
         },
         create: {
-          email: "james@swiip.com",
+          email: "james@conversa.app",
           phone: "+905551234593",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 120 * 60 * 1000),
@@ -1466,7 +1466,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "elif@swiip.com" },
+        where: { email: "elif@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1475,7 +1475,7 @@ async function main() {
           }
         },
         create: {
-          email: "elif@swiip.com",
+          email: "elif@conversa.app",
           phone: "+905551234594",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -1517,7 +1517,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "lucas@swiip.com" },
+        where: { email: "lucas@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1526,7 +1526,7 @@ async function main() {
           }
         },
         create: {
-          email: "lucas@swiip.com",
+          email: "lucas@conversa.app",
           phone: "+905551234595",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 30 * 60 * 1000),
@@ -1565,7 +1565,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "selin@swiip.com" },
+        where: { email: "selin@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1574,7 +1574,7 @@ async function main() {
           }
         },
         create: {
-          email: "selin@swiip.com",
+          email: "selin@conversa.app",
           phone: "+905551234596",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 12 * 60 * 1000),
@@ -1613,7 +1613,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "pierre@swiip.com" },
+        where: { email: "pierre@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1622,7 +1622,7 @@ async function main() {
           }
         },
         create: {
-          email: "pierre@swiip.com",
+          email: "pierre@conversa.app",
           phone: "+905551234597",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -1664,7 +1664,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "ece@swiip.com" },
+        where: { email: "ece@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1673,7 +1673,7 @@ async function main() {
           }
         },
         create: {
-          email: "ece@swiip.com",
+          email: "ece@conversa.app",
           phone: "+905551234598",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 50 * 60 * 1000),
@@ -1712,7 +1712,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "ivan@swiip.com" },
+        where: { email: "ivan@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1721,7 +1721,7 @@ async function main() {
           }
         },
         create: {
-          email: "ivan@swiip.com",
+          email: "ivan@conversa.app",
           phone: "+905551234599",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 80 * 60 * 1000),
@@ -1760,7 +1760,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "aylin@swiip.com" },
+        where: { email: "aylin@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1769,7 +1769,7 @@ async function main() {
           }
         },
         create: {
-          email: "aylin@swiip.com",
+          email: "aylin@conversa.app",
           phone: "+905551234600",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -1811,7 +1811,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "okan@swiip.com" },
+        where: { email: "okan@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1820,7 +1820,7 @@ async function main() {
           }
         },
         create: {
-          email: "okan@swiip.com",
+          email: "okan@conversa.app",
           phone: "+905551234601",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 65 * 60 * 1000),
@@ -1859,7 +1859,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "hana@swiip.com" },
+        where: { email: "hana@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1868,7 +1868,7 @@ async function main() {
           }
         },
         create: {
-          email: "hana@swiip.com",
+          email: "hana@conversa.app",
           phone: "+905551234602",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 18 * 60 * 1000),
@@ -1907,7 +1907,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "ali@swiip.com" },
+        where: { email: "ali@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1916,7 +1916,7 @@ async function main() {
           }
         },
         create: {
-          email: "ali@swiip.com",
+          email: "ali@conversa.app",
           phone: "+905551234603",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 95 * 60 * 1000),
@@ -1955,7 +1955,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "eva@swiip.com" },
+        where: { email: "eva@conversa.app" },
         update: {
           profile: {
             update: {
@@ -1964,7 +1964,7 @@ async function main() {
           }
         },
         create: {
-          email: "eva@swiip.com",
+          email: "eva@conversa.app",
           phone: "+905551234604",
           isPremium: true,
           premiumSource: "revenuecat",
@@ -2006,7 +2006,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "emre@swiip.com" },
+        where: { email: "emre@conversa.app" },
         update: {
           profile: {
             update: {
@@ -2015,7 +2015,7 @@ async function main() {
           }
         },
         create: {
-          email: "emre@swiip.com",
+          email: "emre@conversa.app",
           phone: "+905551234605",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 42 * 60 * 1000),
@@ -2054,7 +2054,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "maya@swiip.com" },
+        where: { email: "maya@conversa.app" },
         update: {
           profile: {
             update: {
@@ -2063,7 +2063,7 @@ async function main() {
           }
         },
         create: {
-          email: "maya@swiip.com",
+          email: "maya@conversa.app",
           phone: "+905551234606",
           isPremium: false,
           lastActiveAt: new Date(now.getTime() - 22 * 60 * 1000),
@@ -2103,7 +2103,7 @@ async function main() {
       ].map(uploadFromUrl));
 
       return prisma.user.upsert({
-        where: { email: "test@swiip.com" },
+        where: { email: "test@conversa.app" },
         update: {
           profile: {
             update: {
@@ -2112,7 +2112,7 @@ async function main() {
           }
         },
         create: {
-          email: "test@swiip.com",
+          email: "test@conversa.app",
           phone: "+905551234607",
           isPremium: true,
           premiumSource: "admin",
@@ -2162,7 +2162,7 @@ async function main() {
 
   // Create sessions for test users
   console.log("🔐 Creating sessions...");
-  const testUser = users.find(u => u.email === "test@swiip.com") || users[0]; // Test user or fallback to Alex
+  const testUser = users.find(u => u.email === "test@conversa.app") || users[0]; // Test user or fallback to Alex
   const token = generateSessionToken();
   const tokenHash = hashSessionToken(token);
   const expiresAt = getSessionExpiry();
@@ -2771,7 +2771,7 @@ async function main() {
   console.log("\n🎉 Comprehensive seed completed successfully!");
   console.log("\n📋 Test Credentials:");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log(`Email: test@swiip.com`);
+  console.log(`Email: test@conversa.app`);
   console.log(`Phone: +905551234607`);
   console.log(`Token: ${token}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

@@ -115,11 +115,11 @@ export async function sendVerificationCode(
         await transporter.sendMail({
           from: env.SMTP_FROM,
           to: email,
-          subject: "Your Verification Code - Swiip",
-          text: `Your Swiip verification code is: ${code}\n\nIt expires in 5 minutes.`,
+          subject: "Your Verification Code - Conversa",
+          text: `Your Conversa verification code is: ${code}\n\nIt expires in 5 minutes.`,
           html: `
                     <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                        <h2 style="color: #6C5CE7;">Swiip Verification</h2>
+                        <h2 style="color: #6C5CE7;">Conversa Verification</h2>
                         <p>Your verification code is:</p>
                         <h1 style="font-size: 32px; letter-spacing: 5px; color: #333;">${code}</h1>
                         <p>This code will expire in 5 minutes.</p>

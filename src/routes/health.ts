@@ -11,7 +11,7 @@ router.get("/", async (_req, res) => {
 
     res.json({
       ok: true,
-      name: "swiip-backend",
+      name: "conversa-backend",
       timestamp: new Date().toISOString(),
       database: "connected"
     });
@@ -19,7 +19,7 @@ router.get("/", async (_req, res) => {
     logger.error("Health check failed", { error });
     res.status(503).json({
       ok: false,
-      name: "swiip-backend",
+      name: "conversa-backend",
       timestamp: new Date().toISOString(),
       database: "disconnected",
       error: error instanceof Error ? error.message : "Unknown error"

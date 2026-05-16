@@ -56,8 +56,8 @@ async function callOpenRouter(prompt: string, apiKey: string, model: string): Pr
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://swiip.app", // Optional: for analytics
-      "X-Title": "Swiip", // Optional: for analytics
+      "HTTP-Referer": "https://conversa.app", // Optional: for analytics
+      "X-Title": "Conversa", // Optional: for analytics
     },
     body: JSON.stringify({
       model,

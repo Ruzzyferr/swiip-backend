@@ -1,5 +1,5 @@
 {
-  "name": "swiip-backend",
+  "name": "conversa-backend",
   "type": "module",
   "private": true,
   "main": "dist/index.js",

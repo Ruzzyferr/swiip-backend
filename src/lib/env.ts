@@ -31,7 +31,7 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().int().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().default("Swiip <info@swiip.com>"),
+  SMTP_FROM: z.string().default("Conversa <info@conversa.app>"),
   // CORS / Socket.IO allowed origins (comma-separated). Empty in dev = allow all.
   ALLOWED_ORIGINS: z.string().optional(),
   // Google Play / App Store reviewer bypass for verify-code (all three required to enable).

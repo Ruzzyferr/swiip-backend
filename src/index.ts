@@ -24,14 +24,14 @@ async function start() {
     await runDataMigrations();
 
     httpServer.listen(env.PORT, () => {
-      logger.info(`[swiip-backend] Server listening on http://localhost:${env.PORT}`, {
+      logger.info(`[conversa-backend] Server listening on http://localhost:${env.PORT}`, {
         port: env.PORT,
         nodeEnv: env.NODE_ENV,
         websocket: true,
       });
     });
   } catch (error) {
-    logger.error("[swiip-backend] Failed to start server", { error: String(error) });
+    logger.error("[conversa-backend] Failed to start server", { error: String(error) });
     process.exit(1);
   }
 }
